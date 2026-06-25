@@ -394,6 +394,10 @@ export default function ReportPage() {
         🗺️ Ver el mapa de daños
       </a>
 
+      <a className="btn btn-ghost" href="/ayuda" style={{ marginTop: 12 }}>
+        🤝 Ayuda y recursos
+      </a>
+
       <button onClick={() => setHelpOpen(true)} style={styles.madeWith}>
         Hecho con amor 💚🇻🇪 por Coco Wallet
       </button>

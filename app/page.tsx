@@ -194,11 +194,134 @@ function buildPopupNode(p: Record<string, string>): HTMLElement {
   return root;
 }
 
+function timeAgo(iso: string): string {
+  const mins = Math.floor((Date.now() - new Date(iso).getTime()) / 60000);
+  if (mins < 1) return "ahora";
+  if (mins < 60) return `hace ${mins} min`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `hace ${hrs} h`;
+  return `hace ${Math.floor(hrs / 24)} d`;
+}
+
+// Preview grid of recently reported buildings, shown below the map.
+function BuildingGrid({ reports }: { reports: ReportRow[] }) {
+  const recent = reports.slice(0, 24); // newest first (already ordered)
+  return (
+    <section style={gridStyles.wrap}>
+      <h2 style={gridStyles.heading}>🏚️ Edificios reportados recientemente</h2>
+      {recent.length === 0 ? (
+        <p style={gridStyles.empty}>
+          Aún no hay reportes. Sé el primero en reportar un edificio.
+        </p>
+      ) : (
+        <div style={gridStyles.grid}>
+          {recent.map((r) => {
+            const info = severityInfo(r.severity);
+            return (
+              <a key={r.id} href="/" style={gridStyles.card}>
+                <div style={gridStyles.thumb}>
+                  {r.photo_url ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={r.photo_url}
+                      alt={r.place ?? "Edificio reportado"}
+                      style={gridStyles.img}
+                      loading="lazy"
+                    />
+                  ) : (
+                    <div style={gridStyles.noImg}>🏚️</div>
+                  )}
+                </div>
+                <div style={gridStyles.body}>
+                  <div style={gridStyles.metaRow}>
+                    <span
+                      style={{ ...gridStyles.badge, background: info.color }}
+                    >
+                      {info.label}
+                    </span>
+                    <span style={gridStyles.time}>{timeAgo(r.created_at)}</span>
+                  </div>
+                  {r.place && <div style={gridStyles.place}>{r.place}</div>}
+                  {r.note && <div style={gridStyles.note}>{r.note}</div>}
+                </div>
+              </a>
+            );
+          })}
+        </div>
+      )}
+      <a className="btn btn-primary" href="/reporte" style={{ marginTop: 16 }}>
+        ➕ Reportar un edificio
+      </a>
+    </section>
+  );
+}
+
+const gridStyles: Record<string, React.CSSProperties> = {
+  wrap: { maxWidth: 760, margin: "0 auto", padding: "24px 16px 40px" },
+  heading: { fontSize: 18, margin: "0 0 16px" },
+  empty: { color: "var(--muted)", textAlign: "center", padding: "24px 0" },
+  grid: {
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fill, minmax(150px, 1fr))",
+    gap: 12,
+  },
+  card: {
+    display: "block",
+    background: "var(--panel)",
+    borderRadius: 14,
+    overflow: "hidden",
+    textDecoration: "none",
+    color: "var(--text)",
+  },
+  thumb: {
+    width: "100%",
+    aspectRatio: "4 / 3",
+    background: "#0b1220",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  img: { width: "100%", height: "100%", objectFit: "cover" },
+  noImg: { fontSize: 36, opacity: 0.5 },
+  body: { padding: 10 },
+  metaRow: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 6,
+    marginBottom: 6,
+  },
+  badge: {
+    fontSize: 11,
+    fontWeight: 700,
+    color: "#fff",
+    padding: "3px 8px",
+    borderRadius: 999,
+  },
+  time: { fontSize: 11, color: "var(--muted)", whiteSpace: "nowrap" },
+  place: {
+    fontWeight: 700,
+    fontSize: 14,
+    overflow: "hidden",
+    textOverflow: "ellipsis",
+    whiteSpace: "nowrap",
+  },
+  note: {
+    fontSize: 12,
+    color: "var(--muted)",
+    marginTop: 2,
+    overflow: "hidden",
+    textOverflow: "ellipsis",
+    whiteSpace: "nowrap",
+  },
+};
+
 export default function MapPage() {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
   const loadedRef = useRef(false);
   const [count, setCount] = useState<number | null>(null);
+  const [reports, setReports] = useState<ReportRow[]>([]); // for the grid below
   const [heatmap, setHeatmap] = useState(false);
   const [copied, setCopied] = useState(false); // "link copied" toast
   // True when the browser can't create a WebGL context (some in-app browsers,
@@ -221,6 +344,7 @@ export default function MapPage() {
   function refresh() {
     fetchReports().then((rows) => {
       setCount(rows.length);
+      setReports(rows);
       const src = mapRef.current?.getSource(SRC) as
         | maplibregl.GeoJSONSource
         | undefined;
@@ -247,7 +371,10 @@ export default function MapPage() {
     } catch (e) {
       console.error("Map init failed:", e);
       setMapError(true);
-      fetchReports().then((rows) => setCount(rows.length));
+      fetchReports().then((rows) => {
+        setCount(rows.length);
+        setReports(rows);
+      });
       return;
     }
     map.on("error", (e) => {
@@ -259,6 +386,7 @@ export default function MapPage() {
     map.on("load", async () => {
       const rows = await fetchReports();
       setCount(rows.length);
+      setReports(rows);
 
       // No clustering: every building pin stays visible at every zoom level.
       map.addSource(SRC, {
@@ -376,62 +504,77 @@ export default function MapPage() {
   }
 
   if (mapError) {
+    // No WebGL: skip the map but still show the count, actions, and the grid.
     return (
-      <main
-        style={{
-          minHeight: "100dvh",
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          justifyContent: "center",
-          textAlign: "center",
-          padding: 24,
-          gap: 16,
-        }}
-      >
-        <div style={{ fontSize: 48 }}>🗺️</div>
-        <h1 style={{ margin: 0, fontSize: 22 }}>
-          {count == null ? "…" : count.toLocaleString("es-VE")} edificios
-          reportados
-        </h1>
-        <p style={{ color: "var(--muted)", maxWidth: 340, margin: 0 }}>
-          Tu navegador no puede mostrar el mapa. Prueba abrir este enlace en
-          Chrome o Safari (no dentro de WhatsApp).
-        </p>
-        <div style={{ display: "flex", flexDirection: "column", gap: 12, width: "100%", maxWidth: 320 }}>
-          <a className="btn btn-primary" href="/reporte">
-            ➕ Reportar edificio
-          </a>
-          <button className="btn btn-whatsapp" onClick={handleShare}>
-            {copied ? "✅ ¡Enlace copiado!" : "📲 Compartir"}
-          </button>
-        </div>
+      <main>
+        <section
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            textAlign: "center",
+            padding: "40px 24px 24px",
+            gap: 16,
+          }}
+        >
+          <div style={{ fontSize: 48 }}>🗺️</div>
+          <h1 style={{ margin: 0, fontSize: 22 }}>
+            {count == null ? "…" : count.toLocaleString("es-VE")} edificios
+            reportados
+          </h1>
+          <p style={{ color: "var(--muted)", maxWidth: 340, margin: 0 }}>
+            Tu navegador no puede mostrar el mapa, pero abajo puedes ver los
+            reportes recientes.
+          </p>
+          <div style={{ display: "flex", flexDirection: "column", gap: 12, width: "100%", maxWidth: 320 }}>
+            <a className="btn btn-primary" href="/reporte">
+              ➕ Reportar edificio
+            </a>
+            <button className="btn btn-whatsapp" onClick={handleShare}>
+              {copied ? "✅ ¡Enlace copiado!" : "📲 Compartir"}
+            </button>
+            <a className="btn btn-ghost" href="/ayuda">
+              💚 Ayuda y recursos
+            </a>
+          </div>
+        </section>
+        <BuildingGrid reports={reports} />
       </main>
     );
   }
 
   return (
-    <main style={{ position: "relative", height: "100dvh" }}>
-      <div ref={containerRef} style={{ position: "absolute", inset: 0 }} />
+    <main>
+      {/* Full-screen map hero. Overlays are positioned relative to this. */}
+      <section style={{ position: "relative", height: "100dvh" }}>
+        <div ref={containerRef} style={{ position: "absolute", inset: 0 }} />
 
-      <div style={styles.topBar}>
-        <div style={styles.counter}>
-          🏚️ {count == null ? "…" : count.toLocaleString("es-VE")} edificios
-          reportados
+        <div style={styles.topBar}>
+          <div style={styles.counter}>
+            🏚️ {count == null ? "…" : count.toLocaleString("es-VE")} edificios
+            reportados
+          </div>
+          <div style={{ display: "flex", gap: 8 }}>
+            <a style={styles.toggle} href="/ayuda">
+              💚 Ayuda
+            </a>
+            <button style={styles.toggle} onClick={toggleHeatmap}>
+              {heatmap ? "📍 Puntos" : "🔥 Calor"}
+            </button>
+          </div>
         </div>
-        <button style={styles.toggle} onClick={toggleHeatmap}>
-          {heatmap ? "📍 Puntos" : "🔥 Mapa de calor"}
-        </button>
-      </div>
 
-      <div style={styles.bottomBar}>
-        <a className="btn btn-primary" href="/reporte">
-          ➕ Reportar edificio
-        </a>
-        <button className="btn btn-whatsapp" onClick={handleShare}>
-          {copied ? "✅ ¡Copiado!" : "📲 Compartir"}
-        </button>
-      </div>
+        <div style={styles.bottomBar}>
+          <a className="btn btn-primary" href="/reporte">
+            ➕ Reportar edificio
+          </a>
+          <button className="btn btn-whatsapp" onClick={handleShare}>
+            {copied ? "✅ ¡Copiado!" : "📲 Compartir"}
+          </button>
+        </div>
+      </section>
+
+      <BuildingGrid reports={reports} />
     </main>
   );
 }
@@ -464,6 +607,9 @@ const styles: Record<string, React.CSSProperties> = {
     borderRadius: 999,
     fontWeight: 700,
     fontSize: 14,
+    textDecoration: "none",
+    display: "inline-block",
+    whiteSpace: "nowrap",
   },
   bottomBar: {
     position: "absolute",
