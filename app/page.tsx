@@ -101,7 +101,9 @@ function buildPopupNode(p: Record<string, string>): HTMLElement {
     : "";
 
   const where = p.place ? p.place.split(",")[0] : "un edificio";
-  const shareText = `🏚️ ${where} reportado como ${info.label} — Terremoto Venezuela https://sismovenezuela.org`;
+  // Share the per-building URL so X/WhatsApp scrape THIS building's photo.
+  const buildingUrl = `https://sismovenezuela.org/edificio/${reportId}`;
+  const shareText = `🏚️ ${where} reportado como ${info.label} — Terremoto Venezuela ${buildingUrl}`;
   const xUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}`;
   const waUrl = `https://wa.me/?text=${encodeURIComponent(shareText)}`;
 
@@ -380,13 +382,14 @@ function BuildingModal({
           📍 Ver en el mapa
         </button>
 
-        {/* Share this specific building on X / WhatsApp */}
+        {/* Share this specific building — link to its own page so the
+            building's photo is the social preview image. */}
         <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
           <a
             className="btn"
             style={{ background: "#000", color: "#fff", fontSize: 14, padding: 12 }}
             href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(
-              `${shareLabel(report)} — Terremoto Venezuela ${SHARE_URL}`
+              `${shareLabel(report)} — Terremoto Venezuela ${SHARE_URL}/edificio/${report.id}`
             )}`}
             target="_blank"
             rel="noopener noreferrer"
@@ -397,7 +400,7 @@ function BuildingModal({
             className="btn btn-whatsapp"
             style={{ fontSize: 14, padding: 12 }}
             href={`https://wa.me/?text=${encodeURIComponent(
-              `${shareLabel(report)} — Terremoto Venezuela ${SHARE_URL}`
+              `${shareLabel(report)} — Terremoto Venezuela ${SHARE_URL}/edificio/${report.id}`
             )}`}
             target="_blank"
             rel="noopener noreferrer"
@@ -892,6 +895,20 @@ export default function MapPage() {
       .addTo(map);
   }
 
+  // Deep-link: /?b=<id> (e.g. from a shared /edificio/<id> link) → open that
+  // building's pin once reports + map are ready. Fire once.
+  const deepLinkedRef = useRef(false);
+  useEffect(() => {
+    if (deepLinkedRef.current || !loadedRef.current || reports.length === 0) return;
+    const id = new URLSearchParams(window.location.search).get("b");
+    if (!id) return;
+    const r = reports.find((x) => x.id === id);
+    if (r) {
+      deepLinkedRef.current = true;
+      flyToReport(r);
+    }
+  }, [reports]); // eslint-disable-line react-hooks/exhaustive-deps
+
   if (mapError) {
     // No WebGL: skip the map but still show the count, actions, and the grid.
     return (
@@ -955,6 +972,14 @@ export default function MapPage() {
             </button>
             <a style={styles.toggle} href="/acopio">
               📦 Acopio
+            </a>
+            <a
+              style={styles.toggle}
+              href="https://desaparecidosterremotovenezuela.com/"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              🧍 Desaparecidos
             </a>
             <a style={styles.toggle} href="/ayuda">
               💚 Ayuda
