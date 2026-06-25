@@ -116,10 +116,10 @@ const styles: Record<string, React.CSSProperties> = {
     color: "#fff",
   },
   logo: {
-    height: 28,
-    width: "auto",
-    maxWidth: "70%",
+    height: 30,
+    width: "100%", // full box so object-position can pin the artwork left
     objectFit: "contain",
+    objectPosition: "left center",
     display: "block",
     marginBottom: 12,
   },
