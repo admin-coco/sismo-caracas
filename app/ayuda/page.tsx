@@ -1,6 +1,8 @@
 "use client";
 
+import { useState } from "react";
 import { COCO_RESOURCES, EXTERNAL_RESOURCES, type Resource } from "@/lib/resources";
+import { shareApp } from "@/lib/share";
 
 function Card({ r }: { r: Resource }) {
   return (
@@ -10,15 +12,23 @@ function Card({ r }: { r: Resource }) {
       rel="noopener noreferrer"
       style={styles.card}
     >
-      <span style={{ ...styles.badge, background: r.badgeColor }}>{r.badge}</span>
       <div style={styles.name}>{r.name}</div>
       <div style={styles.desc}>{r.description}</div>
       <div style={styles.visit}>Visitar sitio →</div>
+      <span style={{ ...styles.badge, background: r.badgeColor }}>{r.badge}</span>
     </a>
   );
 }
 
 export default function AyudaPage() {
+  const [copied, setCopied] = useState(false);
+  async function handleShare() {
+    const result = await shareApp();
+    if (result === "copied") {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2500);
+    }
+  }
   return (
     <main style={styles.page}>
       <header style={styles.header}>
@@ -50,9 +60,13 @@ export default function AyudaPage() {
       <a className="btn btn-ghost" href="/" style={{ marginTop: 8 }}>
         🗺️ Volver al mapa
       </a>
-      <a className="btn btn-primary" href="/reporte" style={{ marginTop: 12, marginBottom: 32 }}>
-        ➕ Reportar un edificio
-      </a>
+      <button
+        className="btn btn-whatsapp"
+        onClick={handleShare}
+        style={{ marginTop: 12, marginBottom: 32 }}
+      >
+        {copied ? "✅ ¡Enlace copiado!" : "📲 Compartir Ayuda"}
+      </button>
     </main>
   );
 }
@@ -70,24 +84,27 @@ const styles: Record<string, React.CSSProperties> = {
     gap: 14,
   },
   card: {
-    display: "block",
+    display: "flex",
+    flexDirection: "column",
     background: "var(--panel)",
     borderRadius: 16,
     padding: 18,
     textDecoration: "none",
     color: "var(--text)",
+    height: "100%",
   },
   badge: {
-    display: "inline-block",
+    alignSelf: "flex-start", // bottom-left
     padding: "5px 12px",
     borderRadius: 999,
     fontSize: 13,
     fontWeight: 700,
     color: "#fff",
+    marginTop: "auto", // push to the bottom of the card
   },
-  name: { fontSize: 20, fontWeight: 800, margin: "12px 0 6px" },
+  name: { fontSize: 20, fontWeight: 800, margin: "0 0 6px" },
   desc: { color: "var(--muted)", fontSize: 15, lineHeight: 1.4 },
-  visit: { color: "#60a5fa", fontWeight: 700, marginTop: 12 },
+  visit: { color: "#60a5fa", fontWeight: 700, margin: "12px 0 14px" },
   disclaimer: {
     color: "var(--muted)",
     fontSize: 12,
