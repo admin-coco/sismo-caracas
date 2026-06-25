@@ -396,15 +396,14 @@ export default function ReportPage() {
         >
           🏚️ Edificio
         </button>
-        <button
-          onClick={() => setReportType("persona")}
-          style={{
-            ...styles.typeBtn,
-            ...(reportType === "persona" ? styles.typeBtnActive : {}),
-          }}
+        <a
+          href="https://venezuelareporta.org/reportar"
+          target="_blank"
+          rel="noopener noreferrer"
+          style={styles.typeBtn}
         >
           🧍 Desaparecido
-        </button>
+        </a>
         <a href="/acopio" style={styles.typeBtn}>
           📦 Centro de ayuda
         </a>

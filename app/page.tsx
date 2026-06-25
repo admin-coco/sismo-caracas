@@ -117,7 +117,7 @@ function buildPopupNode(p: Record<string, string>): HTMLElement {
     <div data-contrib style="margin-top:8px"></div>
     <button data-addbtn style="width:100%;margin-top:8px;padding:8px;border:none;border-radius:8px;background:#1e293b;color:#fff;font-weight:600;cursor:pointer">➕ Añadir foto o comentario</button>
     <div data-form style="display:none;margin-top:8px"></div>
-    <a href="/reporte?building=${esc(reportId)}" style="display:block;text-align:center;margin-top:8px;padding:8px;border-radius:8px;background:#7c3aed;color:#fff;font-weight:700;text-decoration:none;font-size:13px">🧍 Persona desaparecida</a>
+    <a href="https://venezuelareporta.org/reportar" target="_blank" rel="noopener noreferrer" style="display:block;text-align:center;margin-top:8px;padding:8px;border-radius:8px;background:#7c3aed;color:#fff;font-weight:700;text-decoration:none;font-size:13px">🧍 Reportar desaparecido</a>
   `;
 
   const contribEl = root.querySelector("[data-contrib]") as HTMLElement;
