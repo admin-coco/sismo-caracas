@@ -5,6 +5,7 @@ import maplibregl from "maplibre-gl";
 import { supabase, type ReportRow } from "@/lib/supabase";
 import { severityInfo, SEVERITIES } from "@/lib/severity";
 import { CARACAS, shareApp } from "@/lib/share";
+import { fetchAcopios, type AcopioRow } from "@/lib/acopios";
 import {
   RESUMEN_STATS,
   RESUMEN_SOURCE,
@@ -21,6 +22,22 @@ import {
 
 const OPENFREEMAP_STYLE = "https://tiles.openfreemap.org/styles/dark";
 const SRC = "reports";
+const ACOPIO_SRC = "acopios";
+
+function acopiosToGeoJSON(rows: AcopioRow[]) {
+  return {
+    type: "FeatureCollection" as const,
+    features: rows.map((a) => ({
+      type: "Feature" as const,
+      geometry: { type: "Point" as const, coordinates: [a.lng, a.lat] },
+      properties: {
+        name: a.name,
+        needs: a.needs ?? "",
+        contact: a.contact ?? "",
+      },
+    })),
+  };
+}
 
 function toGeoJSON(rows: ReportRow[]) {
   return {
@@ -536,6 +553,7 @@ export default function MapPage() {
   const loadedRef = useRef(false);
   const [count, setCount] = useState<number | null>(null);
   const [reports, setReports] = useState<ReportRow[]>([]); // for the grid below
+  const [acopioCount, setAcopioCount] = useState(0);
   const [heatmap, setHeatmap] = useState(false);
   const [copied, setCopied] = useState(false); // "link copied" toast
   const [resumenOpen, setResumenOpen] = useState(false); // stats modal
@@ -640,6 +658,55 @@ export default function MapPage() {
           "circle-stroke-width": 2,
           "circle-stroke-color": "rgba(255,255,255,0.9)",
         },
+      });
+
+      // Centros de acopio: green pins, separate source.
+      const acopios = await fetchAcopios();
+      setAcopioCount(acopios.length);
+      map.addSource(ACOPIO_SRC, {
+        type: "geojson",
+        data: acopiosToGeoJSON(acopios),
+      });
+      map.addLayer({
+        id: "acopios",
+        type: "circle",
+        source: ACOPIO_SRC,
+        paint: {
+          "circle-color": "#15803d",
+          "circle-radius": [
+            "interpolate",
+            ["linear"],
+            ["zoom"],
+            8,
+            6,
+            12,
+            9,
+            16,
+            13,
+          ],
+          "circle-stroke-width": 3,
+          "circle-stroke-color": "#bbf7d0",
+        },
+      });
+      map.on("click", "acopios", (e) => {
+        const f = e.features?.[0];
+        if (!f) return;
+        const p = f.properties as Record<string, string>;
+        const needs = p.needs
+          ? `<div style="margin-top:6px">${p.needs}</div>`
+          : "";
+        const contact = p.contact
+          ? `<div style="margin-top:6px;color:#15803d;font-weight:600">📞 ${p.contact}</div>`
+          : "";
+        new maplibregl.Popup({ maxWidth: "260px" })
+          .setLngLat((f.geometry as GeoJSON.Point).coordinates as [number, number])
+          .setHTML(
+            `<div style="font-family:system-ui;color:#0f172a">
+               <strong style="color:#15803d">📦 ${p.name}</strong>
+               ${needs}${contact}
+             </div>`
+          )
+          .addTo(map);
       });
 
       // Heatmap layer (hidden until toggled), weighted by severity.
@@ -792,7 +859,10 @@ export default function MapPage() {
           >
             📊 {count == null ? "…" : count.toLocaleString("es-VE")} edificios ›
           </button>
-          <div style={{ display: "flex", gap: 8 }}>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", justifyContent: "flex-end" }}>
+            <a style={styles.toggle} href="/acopio">
+              📦 Acopio
+            </a>
             <a style={styles.toggle} href="/ayuda">
               💚 Ayuda
             </a>
@@ -838,6 +908,12 @@ export default function MapPage() {
                 <span style={{ color: "var(--muted)" }}>Edificios reportados</span>
                 <span style={{ color: "#fbbf24", fontWeight: 800 }}>
                   {count == null ? "…" : count.toLocaleString("es-VE")}
+                </span>
+              </div>
+              <div style={styles.statRow}>
+                <span style={{ color: "var(--muted)" }}>Centros de acopio</span>
+                <span style={{ color: "#15803d", fontWeight: 800 }}>
+                  {acopioCount.toLocaleString("es-VE")}
                 </span>
               </div>
 

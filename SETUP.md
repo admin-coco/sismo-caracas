@@ -72,6 +72,33 @@ create policy "anon read approved" on public.contributions
 As admin you review everything in **Table Editor → contributions**. To hide
 something, set its `approved` to `false` (or delete the row).
 
+### 1c. Centros de acopio (aid collection points)
+
+Run this block too — it creates the `acopios` table for community-reported
+collection/distribution centers (shown as green pins on the map):
+
+```sql
+create table public.acopios (
+  id          uuid primary key default gen_random_uuid(),
+  lat         double precision not null,
+  lng         double precision not null,
+  name        text not null,
+  needs       text,
+  contact     text,
+  approved    boolean not null default true,
+  created_at  timestamptz not null default now()
+);
+create index acopios_created_idx on public.acopios (created_at desc);
+
+alter table public.acopios enable row level security;
+
+create policy "anon insert" on public.acopios
+  for insert to anon with check (true);
+
+create policy "anon read approved" on public.acopios
+  for select to anon using (approved = true);
+```
+
 ## 2. Storage bucket for photos
 
 1. **Storage** → New bucket → name it exactly **`photos`** → toggle **Public bucket** ON → create.
