@@ -30,6 +30,7 @@ export default function ReportPage() {
   const [done, setDone] = useState(false);
   // Honeypot: humans never see/fill this; bots auto-fill it. If set, we bail.
   const [hp, setHp] = useState("");
+  const [helpOpen, setHelpOpen] = useState(false); // "Hecho con amor" help modal
   const [error, setError] = useState<string | null>(null);
 
   // Initialize the draggable-pin map once.
@@ -303,22 +304,26 @@ export default function ReportPage() {
 
       <section>
         <label style={styles.label}>2. Nivel de daño</label>
-        <div style={styles.severityGrid}>
+        <select
+          value={severity ?? ""}
+          onChange={(e) =>
+            setSeverity(e.target.value ? (Number(e.target.value) as Severity) : null)
+          }
+          style={{
+            ...styles.input,
+            marginBottom: 0,
+            borderLeft: severity
+              ? `6px solid ${SEVERITIES.find((s) => s.value === severity)!.color}`
+              : "6px solid transparent",
+          }}
+        >
+          <option value="">Selecciona el nivel…</option>
           {SEVERITIES.map((s) => (
-            <button
-              key={s.value}
-              onClick={() => setSeverity(s.value)}
-              style={{
-                ...styles.severityBtn,
-                background: severity === s.value ? s.color : "var(--panel)",
-                borderColor: s.color,
-              }}
-            >
-              <span style={{ fontSize: 22 }}>{s.emoji}</span>
-              {s.label}
-            </button>
+            <option key={s.value} value={s.value}>
+              {s.emoji} {s.label}
+            </option>
           ))}
-        </div>
+        </select>
       </section>
 
       <section>
@@ -358,21 +363,62 @@ export default function ReportPage() {
       <a
         className="btn btn-ghost"
         href="/"
-        style={{ marginTop: 12, marginBottom: 32 }}
+        style={{ marginTop: 12 }}
       >
         🗺️ Ver el mapa de daños
       </a>
+
+      <button onClick={() => setHelpOpen(true)} style={styles.madeWith}>
+        Hecho con amor 💚🇻🇪 por Coco Wallet
+      </button>
+
+      {helpOpen && (
+        <div style={styles.overlay} onClick={() => setHelpOpen(false)}>
+          <div style={styles.modal} onClick={(e) => e.stopPropagation()}>
+            <button
+              onClick={() => setHelpOpen(false)}
+              style={styles.modalClose}
+              aria-label="Cerrar"
+            >
+              ✕
+            </button>
+            <h2 style={{ margin: "0 0 4px", fontSize: 20 }}>
+              Ayuda a los afectados 💚
+            </h2>
+            <p style={{ color: "var(--muted)", fontSize: 14, margin: "0 0 16px" }}>
+              ¿Cómo quieres ayudar?
+            </p>
+            <a
+              className="btn btn-primary"
+              href="https://cocomercado.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{ marginBottom: 10 }}
+            >
+              🍲 Enviar comida
+            </a>
+            <a
+              className="btn btn-whatsapp"
+              href="https://cocowallet.app"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              💸 Enviar dinero
+            </a>
+          </div>
+        </div>
+      )}
     </main>
   );
 }
 
 const styles: Record<string, React.CSSProperties> = {
   page: { maxWidth: 520, margin: "0 auto", padding: 16 },
-  header: { textAlign: "center", marginBottom: 16 },
-  title: { fontSize: 22, margin: "12px 0 4px" },
-  sub: { color: "var(--muted)", margin: 0, fontSize: 14 },
-  label: { display: "block", fontWeight: 700, margin: "20px 0 8px" },
-  hint: { color: "var(--muted)", fontSize: 13, margin: "8px 0 0" },
+  header: { textAlign: "center", marginBottom: 10 },
+  title: { fontSize: 20, margin: "4px 0 2px" },
+  sub: { color: "var(--muted)", margin: 0, fontSize: 13 },
+  label: { display: "block", fontWeight: 700, margin: "14px 0 6px" },
+  hint: { color: "var(--muted)", fontSize: 12, margin: "6px 0 0" },
   input: {
     width: "100%",
     padding: 14,
@@ -382,6 +428,7 @@ const styles: Record<string, React.CSSProperties> = {
     border: "none",
     color: "var(--text)",
     fontSize: 15,
+    colorScheme: "dark", // makes native <select> dropdown render dark + readable
   },
   searchWrap: { position: "relative" },
   results: {
@@ -406,27 +453,10 @@ const styles: Record<string, React.CSSProperties> = {
     color: "var(--muted)",
   },
   map: {
-    height: 240,
+    height: 180,
     borderRadius: 12,
     overflow: "hidden",
-    marginTop: 10,
-  },
-  severityGrid: {
-    display: "grid",
-    gridTemplateColumns: "1fr 1fr",
-    gap: 10,
-  },
-  severityBtn: {
-    display: "flex",
-    flexDirection: "column",
-    alignItems: "center",
-    gap: 6,
-    padding: "16px 8px",
-    borderRadius: 12,
-    border: "2px solid",
-    color: "#fff",
-    fontWeight: 700,
-    fontSize: 15,
+    marginTop: 8,
   },
   file: {
     width: "100%",
@@ -438,7 +468,7 @@ const styles: Record<string, React.CSSProperties> = {
   },
   textarea: {
     width: "100%",
-    minHeight: 80,
+    minHeight: 60,
     padding: 12,
     background: "var(--panel)",
     borderRadius: 12,
@@ -463,5 +493,45 @@ const styles: Record<string, React.CSSProperties> = {
     width: "100%",
     maxWidth: 320,
     marginTop: 24,
+  },
+  madeWith: {
+    display: "block",
+    width: "100%",
+    margin: "20px 0 28px",
+    padding: 8,
+    background: "transparent",
+    border: "none",
+    color: "var(--muted)",
+    fontSize: 14,
+    textAlign: "center",
+  },
+  overlay: {
+    position: "fixed",
+    inset: 0,
+    background: "rgba(0,0,0,0.6)",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 20,
+    zIndex: 50,
+  },
+  modal: {
+    position: "relative",
+    width: "100%",
+    maxWidth: 340,
+    background: "var(--panel)",
+    borderRadius: 16,
+    padding: 24,
+    display: "flex",
+    flexDirection: "column",
+  },
+  modalClose: {
+    position: "absolute",
+    top: 12,
+    right: 14,
+    background: "transparent",
+    border: "none",
+    color: "var(--muted)",
+    fontSize: 18,
   },
 };
