@@ -6,6 +6,7 @@ export interface Resource {
   description: string;
   url: string;
   logo?: string; // path under /public, shown top-left of the card
+  logoHeight?: number; // override default logo height (px) for tighter-cropped logos
 }
 
 // Coco services + Ridery — our own response options, shown first.
@@ -17,6 +18,7 @@ export const COCO_RESOURCES: Resource[] = [
     description: "Envía comida y víveres a familiares y afectados en Venezuela.",
     url: "https://cocomercado.com",
     logo: "/logos/coco-mercado.png",
+    logoHeight: 44,
   },
   {
     badge: "Enviar dinero",

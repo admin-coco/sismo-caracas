@@ -14,7 +14,11 @@ function Card({ r }: { r: Resource }) {
     >
       {r.logo && (
         // eslint-disable-next-line @next/next/no-img-element
-        <img src={r.logo} alt={r.name} style={styles.logo} />
+        <img
+          src={r.logo}
+          alt={r.name}
+          style={{ ...styles.logo, ...(r.logoHeight ? { height: r.logoHeight } : {}) }}
+        />
       )}
       <div style={styles.name}>{r.name}</div>
       <div style={styles.desc}>{r.description}</div>
