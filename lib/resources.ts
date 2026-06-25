@@ -5,6 +5,7 @@ export interface Resource {
   name: string;
   description: string;
   url: string;
+  logo?: string; // path under /public, shown top-left of the card
 }
 
 // Coco services + Ridery — our own response options, shown first.
@@ -15,6 +16,7 @@ export const COCO_RESOURCES: Resource[] = [
     name: "Coco Mercado",
     description: "Envía comida y víveres a familiares y afectados en Venezuela.",
     url: "https://cocomercado.com",
+    logo: "/logos/coco-mercado.png",
   },
   {
     badge: "Enviar dinero",
@@ -22,6 +24,7 @@ export const COCO_RESOURCES: Resource[] = [
     name: "Coco Wallet",
     description: "Envía dinero de forma rápida a quienes lo necesitan.",
     url: "https://cocowallet.app",
+    logo: "/logos/coco-wallet.png",
   },
 ];
 
@@ -33,6 +36,7 @@ export const EXTERNAL_RESOURCES: Resource[] = [
     name: "Yummy Marketplace",
     description: "Pide comida, mercado y productos a domicilio.",
     url: "https://yummysuperapp.com",
+    logo: "/logos/yummy-marketplace.png",
   },
   {
     badge: "Transporte",
@@ -40,6 +44,7 @@ export const EXTERNAL_RESOURCES: Resource[] = [
     name: "Yummy Rides",
     description: "Pide un viaje para movilizarte o ayudar a evacuar.",
     url: "https://yummysuperapp.com",
+    logo: "/logos/yummy-rides.png",
   },
   {
     badge: "Transporte",
@@ -47,6 +52,7 @@ export const EXTERNAL_RESOURCES: Resource[] = [
     name: "Ridery",
     description: "Pide un taxi seguro para movilizarte o ayudar a evacuar.",
     url: "https://ridery.app",
+    logo: "/logos/ridery.png",
   },
   {
     badge: "Pagos",
@@ -54,6 +60,7 @@ export const EXTERNAL_RESOURCES: Resource[] = [
     name: "Tilín",
     description: "Envía y recibe dinero de forma rápida.",
     url: "https://tilin.com",
+    logo: "/logos/tilin.svg",
   },
   {
     badge: "Compra ahora, paga después",
@@ -61,5 +68,6 @@ export const EXTERNAL_RESOURCES: Resource[] = [
     name: "Cashea",
     description: "Compra lo que necesitas y paga en cuotas.",
     url: "https://cashea.app",
+    logo: "/logos/cashea.png",
   },
 ];

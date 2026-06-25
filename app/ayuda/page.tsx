@@ -12,6 +12,10 @@ function Card({ r }: { r: Resource }) {
       rel="noopener noreferrer"
       style={styles.card}
     >
+      {r.logo && (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={r.logo} alt={r.name} style={styles.logo} />
+      )}
       <div style={styles.name}>{r.name}</div>
       <div style={styles.desc}>{r.description}</div>
       <div style={styles.bottomRow}>
@@ -110,6 +114,14 @@ const styles: Record<string, React.CSSProperties> = {
     fontSize: 13,
     fontWeight: 700,
     color: "#fff",
+  },
+  logo: {
+    height: 28,
+    width: "auto",
+    maxWidth: "70%",
+    objectFit: "contain",
+    display: "block",
+    marginBottom: 12,
   },
   name: { fontSize: 20, fontWeight: 800, margin: "0 0 6px" },
   desc: { color: "var(--muted)", fontSize: 15, lineHeight: 1.4 },
