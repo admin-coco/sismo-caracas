@@ -975,17 +975,17 @@ export default function MapPage() {
             </a>
             <a
               style={styles.toggle}
-              href="https://desaparecidosterremotovenezuela.com/"
+              href="https://venezuelareporta.org/"
               target="_blank"
               rel="noopener noreferrer"
             >
-              🧍 Desaparecidos
+              🧍 Busca Persona
             </a>
             <a style={styles.toggle} href="/ayuda">
               💚 Ayuda
             </a>
             <button style={styles.toggle} onClick={toggleHeatmap}>
-              {heatmap ? "📍 Puntos" : "🔥 Calor"}
+              {heatmap ? "📍 Puntos" : "🔥 Mapa de Calor"}
             </button>
           </div>
         </div>
