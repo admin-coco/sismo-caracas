@@ -45,6 +45,22 @@ export default async function Image({
     /* fall back to defaults */
   }
 
+  // Pre-fetch the photo into a data URL so a failed/slow fetch degrades to
+  // "no photo" instead of crashing the whole image render (500).
+  let photoData: string | null = null;
+  if (photo) {
+    try {
+      const res = await fetch(photo);
+      if (res.ok) {
+        const buf = Buffer.from(await res.arrayBuffer());
+        const type = res.headers.get("content-type") || "image/jpeg";
+        photoData = `data:${type};base64,${buf.toString("base64")}`;
+      }
+    } catch {
+      photoData = null;
+    }
+  }
+
   return new ImageResponse(
     (
       <div
@@ -57,17 +73,29 @@ export default async function Image({
           position: "relative",
         }}
       >
-        {photo ? (
+        {photoData ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
-            src={photo}
+            src={photoData}
             alt=""
             width={1200}
             height={490}
             style={{ width: "1200px", height: "490px", objectFit: "cover" }}
           />
         ) : (
-          <div style={{ width: 1200, height: 490, display: "flex" }} />
+          <div
+            style={{
+              width: 1200,
+              height: 490,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              color: "#475569",
+              fontSize: 32,
+            }}
+          >
+            Terremoto Venezuela
+          </div>
         )}
         <div
           style={{
@@ -104,7 +132,7 @@ export default async function Image({
               overflow: "hidden",
             }}
           >
-            🏚️ {place}
+            {place}
           </div>
         </div>
       </div>
