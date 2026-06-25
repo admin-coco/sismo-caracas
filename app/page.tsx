@@ -953,6 +953,17 @@ export default function MapPage() {
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap", justifyContent: "flex-end" }}>
             <a
               style={styles.toggle}
+              href="https://terremotovenezuela.app/#hospitales"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              {/* No standalone red-cross emoji exists in Unicode, so use a
+                  red-styled cross glyph (✚) to get a proper medical cross. */}
+              <span style={{ color: "#dc2626", fontWeight: 900 }}>✚</span>{" "}
+              Hospitales y pacientes
+            </a>
+            <a
+              style={styles.toggle}
               href="https://venezuelareporta.org/"
               target="_blank"
               rel="noopener noreferrer"
