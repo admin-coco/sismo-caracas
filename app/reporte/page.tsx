@@ -443,7 +443,7 @@ export default function ReportPage() {
 }
 
 const styles: Record<string, React.CSSProperties> = {
-  page: { maxWidth: 820, margin: "0 auto", padding: "12px 16px" },
+  page: { maxWidth: 480, margin: "0 auto", padding: "12px 16px" },
   header: {
     display: "flex",
     alignItems: "center",
@@ -465,12 +465,9 @@ const styles: Record<string, React.CSSProperties> = {
     borderRadius: 999,
     whiteSpace: "nowrap",
   },
-  // Two columns on desktop, single column on narrow screens.
+  // Single column — clean and easy to fill top to bottom.
   grid: {
-    display: "grid",
-    gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
-    gap: "8px 20px",
-    alignItems: "start",
+    display: "block",
   },
   checkRow: {
     display: "flex",

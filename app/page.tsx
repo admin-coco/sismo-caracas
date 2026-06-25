@@ -82,11 +82,20 @@ function buildPopupNode(p: Record<string, string>): HTMLElement {
     ? `<img src="${esc(p.photo_url)}" style="width:100%;border-radius:8px;margin-top:6px"/>`
     : "";
 
+  const where = p.place ? p.place.split(",")[0] : "un edificio";
+  const shareText = `🏚️ ${where} reportado como ${info.label} — Terremoto Venezuela https://sismovenezuela.org`;
+  const xUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}`;
+  const waUrl = `https://wa.me/?text=${encodeURIComponent(shareText)}`;
+
   root.innerHTML = `
     <strong style="color:${info.color}">${info.emoji} ${info.label}</strong>
     ${place}${note}${img}
     <div style="color:#64748b;font-size:11px;margin-top:6px">${when}</div>
-    <div data-votes style="display:flex;gap:8px;margin-top:10px"></div>
+    <div style="display:flex;gap:6px;margin-top:8px">
+      <a href="${xUrl}" target="_blank" rel="noopener noreferrer" style="flex:1;text-align:center;padding:8px;border-radius:8px;background:#000;color:#fff;font-weight:700;text-decoration:none;font-size:13px">𝕏 Compartir</a>
+      <a href="${waUrl}" target="_blank" rel="noopener noreferrer" style="flex:1;text-align:center;padding:8px;border-radius:8px;background:#25d366;color:#04341c;font-weight:700;text-decoration:none;font-size:13px">WhatsApp</a>
+    </div>
+    <div data-votes style="display:flex;gap:8px;margin-top:8px"></div>
     <div data-contrib style="margin-top:8px"></div>
     <button data-addbtn style="width:100%;margin-top:8px;padding:8px;border:none;border-radius:8px;background:#1e293b;color:#fff;font-weight:600;cursor:pointer">➕ Añadir foto o comentario</button>
     <div data-form style="display:none;margin-top:8px"></div>
