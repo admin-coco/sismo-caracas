@@ -636,6 +636,14 @@ export default function MapPage() {
     mapRef.current = map;
 
     map.on("load", async () => {
+      // Collapse the compact attribution to just the ⓘ icon (it loads
+      // expanded). Tapping the icon still reveals full attribution.
+      const attrib = containerRef.current?.querySelector(
+        ".maplibregl-ctrl-attrib.maplibregl-compact-show"
+      );
+      attrib?.classList.remove("maplibregl-compact-show");
+      if (attrib instanceof HTMLDetailsElement) attrib.open = false;
+
       const rows = await fetchReports();
       setCount(rows.length);
       setReports(rows);
