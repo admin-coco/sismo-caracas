@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import maplibregl from "maplibre-gl";
 import { supabase, type ReportRow } from "@/lib/supabase";
 import { severityInfo, SEVERITIES } from "@/lib/severity";
-import { CARACAS, shareApp } from "@/lib/share";
+import { CARACAS, shareApp, SHARE_URL } from "@/lib/share";
 import { fetchAcopios, type AcopioRow } from "@/lib/acopios";
 import { subscribeToPush, pushPermission } from "@/lib/push";
 import {
@@ -217,6 +217,13 @@ function buildPopupNode(p: Record<string, string>): HTMLElement {
   return root;
 }
 
+// Short, shareable label for a building (severity + first part of place).
+function shareLabel(r: ReportRow): string {
+  const sev = severityInfo(r.severity).label;
+  const where = r.place ? r.place.split(",")[0] : "un edificio";
+  return `🏚️ ${where} reportado como ${sev}`;
+}
+
 function timeAgo(iso: string): string {
   const mins = Math.floor((Date.now() - new Date(iso).getTime()) / 60000);
   if (mins < 1) return "ahora";
@@ -395,6 +402,32 @@ function BuildingModal({
         <button className="btn btn-ghost" onClick={onLocate} style={{ marginTop: 14 }}>
           📍 Ver en el mapa
         </button>
+
+        {/* Share this specific building on X / WhatsApp */}
+        <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
+          <a
+            className="btn"
+            style={{ background: "#000", color: "#fff", fontSize: 14, padding: 12 }}
+            href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(
+              `${shareLabel(report)} — Terremoto Venezuela ${SHARE_URL}`
+            )}`}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            𝕏 Compartir
+          </a>
+          <a
+            className="btn btn-whatsapp"
+            style={{ fontSize: 14, padding: 12 }}
+            href={`https://wa.me/?text=${encodeURIComponent(
+              `${shareLabel(report)} — Terremoto Venezuela ${SHARE_URL}`
+            )}`}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            WhatsApp
+          </a>
+        </div>
 
         {/* Add more photos / comments */}
         <div style={modalStyles.addBox}>

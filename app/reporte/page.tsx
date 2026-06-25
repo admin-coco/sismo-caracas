@@ -7,6 +7,7 @@ import { supabase, PHOTOS_BUCKET, type Severity } from "@/lib/supabase";
 import { SEVERITIES } from "@/lib/severity";
 import { CARACAS, shareApp } from "@/lib/share";
 import { searchAddress, type GeoResult } from "@/lib/geocode";
+import { subscribeToPush, pushSupported } from "@/lib/push";
 
 const OPENFREEMAP_STYLE = "https://tiles.openfreemap.org/styles/dark";
 
@@ -33,6 +34,7 @@ export default function ReportPage() {
   const [helpOpen, setHelpOpen] = useState(false); // "Hecho con amor" help modal
   const [copied, setCopied] = useState(false); // "link copied" toast
   const [mapError, setMapError] = useState(false); // WebGL/mini-map unavailable
+  const [notify, setNotify] = useState(false); // opt-in to push on new reports
   const [error, setError] = useState<string | null>(null);
 
   // Initialize the draggable-pin map once. Guard against WebGL being
@@ -186,6 +188,10 @@ export default function ReportPage() {
         photo_url,
       });
       if (insErr) throw insErr;
+      // If the user opted in, subscribe them to push (asks permission).
+      if (notify) {
+        subscribeToPush().catch(() => {});
+      }
       setDone(true);
     } catch (e) {
       console.error(e);
@@ -258,167 +264,141 @@ export default function ReportPage() {
         }}
       />
       <header style={styles.header}>
-        <h1 style={styles.title}>🏚️ Reportar edificio dañado</h1>
-        <p style={styles.sub}>Terremoto Caracas · mapa colaborativo</p>
+        <div>
+          <h1 style={styles.title}>🏚️ Reportar edificio dañado</h1>
+          <p style={styles.sub}>Terremoto Venezuela · mapa colaborativo</p>
+        </div>
+        <a href="/" style={styles.verMapa}>
+          🗺️ Ver mapa
+        </a>
       </header>
 
-      <section>
-        <label style={styles.label}>1. Ubicación del edificio</label>
-
-        <input
-          type="text"
-          value={place}
-          maxLength={200}
-          onChange={(e) => setPlace(e.target.value)}
-          placeholder="Nombre del edificio / casa (ej: Res. El Ávila)"
-          style={styles.input}
-        />
-
-        <div style={styles.searchWrap}>
+      <div style={styles.grid}>
+        {/* Left column: location */}
+        <div>
+          <label style={styles.label}>1. Ubicación</label>
           <input
             type="text"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="🔎 Buscar dirección (calle, urbanización…)"
+            value={place}
+            maxLength={200}
+            onChange={(e) => setPlace(e.target.value)}
+            placeholder="Nombre del edificio / casa (ej: Res. El Ávila)"
             style={styles.input}
-            autoComplete="off"
           />
-          {(results.length > 0 || searching) && (
-            <ul style={styles.results}>
-              {searching && results.length === 0 && (
-                <li style={styles.resultEmpty}>Buscando…</li>
-              )}
-              {results.map((r, i) => (
-                <li
-                  key={`${r.lat},${r.lng},${i}`}
-                  style={styles.resultItem}
-                  onClick={() => pickResult(r)}
-                >
-                  📍 {r.label}
-                </li>
-              ))}
-            </ul>
-          )}
+          <div style={styles.searchWrap}>
+            <input
+              type="text"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="🔎 Buscar dirección…"
+              style={styles.input}
+              autoComplete="off"
+            />
+            {(results.length > 0 || searching) && (
+              <ul style={styles.results}>
+                {searching && results.length === 0 && (
+                  <li style={styles.resultEmpty}>Buscando…</li>
+                )}
+                {results.map((r, i) => (
+                  <li
+                    key={`${r.lat},${r.lng},${i}`}
+                    style={styles.resultItem}
+                    onClick={() => pickResult(r)}
+                  >
+                    📍 {r.label}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+          <button
+            className="btn btn-ghost"
+            onClick={useMyLocation}
+            style={{ padding: 11, fontSize: 15 }}
+          >
+            {geo === "locating" ? "Localizando…" : "📍 Usar mi ubicación"}
+          </button>
+          <div
+            ref={containerRef}
+            style={mapError ? { display: "none" } : styles.map}
+          />
+          <p style={styles.hint}>
+            {mapError
+              ? "Busca la dirección o usa tu ubicación."
+              : "Arrastra el pin para ajustar."}
+          </p>
         </div>
 
-        <p style={styles.hint}>
-          Si prefieres no compartir tu ubicación, busca la dirección arriba o
-          arrastra el pin rojo en el mapa.
-        </p>
+        {/* Right column: damage, photo, note */}
+        <div>
+          <label style={styles.label}>2. Nivel de daño</label>
+          <select
+            value={severity ?? ""}
+            onChange={(e) =>
+              setSeverity(e.target.value ? (Number(e.target.value) as Severity) : null)
+            }
+            style={{
+              ...styles.input,
+              borderLeft: severity
+                ? `6px solid ${SEVERITIES.find((s) => s.value === severity)!.color}`
+                : "6px solid transparent",
+            }}
+          >
+            <option value="">Selecciona el nivel…</option>
+            {SEVERITIES.map((s) => (
+              <option key={s.value} value={s.value}>
+                {s.emoji} {s.label}
+              </option>
+            ))}
+          </select>
 
-        <button
-          className="btn btn-ghost"
-          onClick={useMyLocation}
-          style={{ marginTop: 4 }}
-        >
-          {geo === "locating" ? "Localizando…" : "📍 Usar mi ubicación"}
-        </button>
-        {geo === "denied" && (
-          <p style={styles.hint}>
-            Permiso denegado. Arrastra el pin rojo al edificio en el mapa.
-          </p>
-        )}
-        {geo === "error" && (
-          <p style={styles.hint}>
-            No se pudo obtener la ubicación. Arrastra el pin rojo en el mapa.
-          </p>
-        )}
-        {!mapError && geo !== "denied" && geo !== "error" && (
-          <p style={styles.hint}>
-            Puedes arrastrar el pin rojo para ajustar la ubicación exacta.
-          </p>
-        )}
-        {mapError && (
-          <p style={styles.hint}>
-            El mapa no se pudo cargar en tu navegador, pero puedes igual buscar
-            la dirección arriba o usar tu ubicación.
-          </p>
-        )}
-        {/* Keep mounted (the effect targets it) but collapse if WebGL failed. */}
-        <div
-          ref={containerRef}
-          style={mapError ? { display: "none" } : styles.map}
-        />
-      </section>
+          <label style={styles.label}>3. Foto (obligatoria)</label>
+          <input
+            type="file"
+            accept="image/*"
+            onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+            style={styles.file}
+          />
+          {file && <p style={styles.hint}>✓ {file.name}</p>}
 
-      <section>
-        <label style={styles.label}>2. Nivel de daño</label>
-        <select
-          value={severity ?? ""}
-          onChange={(e) =>
-            setSeverity(e.target.value ? (Number(e.target.value) as Severity) : null)
-          }
-          style={{
-            ...styles.input,
-            marginBottom: 0,
-            borderLeft: severity
-              ? `6px solid ${SEVERITIES.find((s) => s.value === severity)!.color}`
-              : "6px solid transparent",
-          }}
-        >
-          <option value="">Selecciona el nivel…</option>
-          {SEVERITIES.map((s) => (
-            <option key={s.value} value={s.value}>
-              {s.emoji} {s.label}
-            </option>
-          ))}
-        </select>
-      </section>
+          <label style={styles.label}>4. Nota (opcional)</label>
+          <textarea
+            value={note}
+            maxLength={280}
+            onChange={(e) => setNote(e.target.value)}
+            placeholder="Ej: grietas en la fachada…"
+            style={styles.textarea}
+          />
+        </div>
+      </div>
 
-      <section>
-        <label style={styles.label}>3. Foto</label>
-        {/* No `capture` attr → lets the user pick the camera OR an existing
-            photo from the gallery. `capture` forced camera-only on phones. */}
-        <input
-          type="file"
-          accept="image/*"
-          onChange={(e) => setFile(e.target.files?.[0] ?? null)}
-          style={styles.file}
-        />
-        {file ? (
-          <p style={styles.hint}>Foto seleccionada: {file.name}</p>
-        ) : (
-          <p style={styles.hint}>
-            Toma una foto o elige una de tu galería. Es obligatoria.
-          </p>
-        )}
-      </section>
+      {error && <p style={{ ...styles.hint, color: "#b91c1c" }}>{error}</p>}
 
-      <section>
-        <label style={styles.label}>4. Nota (opcional)</label>
-        <textarea
-          value={note}
-          maxLength={280}
-          onChange={(e) => setNote(e.target.value)}
-          placeholder="Ej: grietas en la fachada, vecinos evacuados…"
-          style={styles.textarea}
-        />
-      </section>
-
-      {error && <p style={{ ...styles.hint, color: "#fca5a5" }}>{error}</p>}
+      {pushSupported() && (
+        <label style={styles.checkRow}>
+          <input
+            type="checkbox"
+            checked={notify}
+            onChange={(e) => setNotify(e.target.checked)}
+            style={{ width: 18, height: 18 }}
+          />
+          🔔 Avísame cuando se reporten nuevos edificios
+        </label>
+      )}
 
       <button
         className="btn btn-primary"
         disabled={severity == null || !file || submitting}
         onClick={submit}
-        style={{ marginTop: 8 }}
+        style={{ marginTop: 8, padding: 13 }}
       >
         {submitting ? "Enviando…" : "Enviar reporte"}
       </button>
 
-      <a
-        className="btn btn-ghost"
-        href="/"
-        style={{ marginTop: 12 }}
+      <button
+        onClick={() => setHelpOpen(true)}
+        style={{ ...styles.madeWith, margin: "10px 0 8px" }}
       >
-        🗺️ Ver el mapa de daños
-      </a>
-
-      <a className="btn btn-ghost" href="/ayuda" style={{ marginTop: 12 }}>
-        🤝 Ayuda y recursos
-      </a>
-
-      <button onClick={() => setHelpOpen(true)} style={styles.madeWith}>
         Hecho con amor 💚🇻🇪 por Coco Wallet
       </button>
 
@@ -463,16 +443,50 @@ export default function ReportPage() {
 }
 
 const styles: Record<string, React.CSSProperties> = {
-  page: { maxWidth: 520, margin: "0 auto", padding: 16 },
-  header: { textAlign: "center", marginBottom: 10 },
-  title: { fontSize: 20, margin: "4px 0 2px" },
-  sub: { color: "var(--muted)", margin: 0, fontSize: 13 },
-  label: { display: "block", fontWeight: 700, margin: "14px 0 6px" },
-  hint: { color: "var(--muted)", fontSize: 12, margin: "6px 0 0" },
+  page: { maxWidth: 820, margin: "0 auto", padding: "12px 16px" },
+  header: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 12,
+    marginBottom: 6,
+  },
+  title: { fontSize: 19, margin: "0 0 2px" },
+  sub: { color: "var(--muted)", margin: 0, fontSize: 12 },
+  verMapa: {
+    flexShrink: 0,
+    background: "var(--panel)",
+    border: "1px solid var(--border)",
+    color: "var(--text)",
+    textDecoration: "none",
+    fontWeight: 700,
+    fontSize: 13,
+    padding: "8px 14px",
+    borderRadius: 999,
+    whiteSpace: "nowrap",
+  },
+  // Two columns on desktop, single column on narrow screens.
+  grid: {
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
+    gap: "8px 20px",
+    alignItems: "start",
+  },
+  checkRow: {
+    display: "flex",
+    alignItems: "center",
+    gap: 10,
+    margin: "12px 0 0",
+    fontWeight: 600,
+    fontSize: 14,
+    cursor: "pointer",
+  },
+  label: { display: "block", fontWeight: 700, margin: "10px 0 5px" },
+  hint: { color: "var(--muted)", fontSize: 12, margin: "5px 0 0" },
   input: {
     width: "100%",
-    padding: 14,
-    marginBottom: 10,
+    padding: 12,
+    marginBottom: 8,
     background: "var(--panel)",
     borderRadius: 12,
     border: "none",
@@ -503,28 +517,29 @@ const styles: Record<string, React.CSSProperties> = {
     color: "var(--muted)",
   },
   map: {
-    height: 180,
+    height: 110,
     borderRadius: 12,
     overflow: "hidden",
-    marginTop: 8,
+    marginTop: 6,
   },
   file: {
     width: "100%",
-    padding: 12,
+    padding: 10,
     background: "var(--panel)",
     borderRadius: 12,
-    border: "none",
+    border: "1px solid var(--border)",
     color: "var(--text)",
+    fontSize: 14,
   },
   textarea: {
     width: "100%",
-    minHeight: 60,
-    padding: 12,
+    minHeight: 48,
+    padding: 10,
     background: "var(--panel)",
     borderRadius: 12,
-    border: "none",
+    border: "1px solid var(--border)",
     color: "var(--text)",
-    fontSize: 15,
+    fontSize: 14,
     resize: "vertical",
   },
   success: {
