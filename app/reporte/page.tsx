@@ -32,18 +32,28 @@ export default function ReportPage() {
   const [hp, setHp] = useState("");
   const [helpOpen, setHelpOpen] = useState(false); // "Hecho con amor" help modal
   const [copied, setCopied] = useState(false); // "link copied" toast
+  const [mapError, setMapError] = useState(false); // WebGL/mini-map unavailable
   const [error, setError] = useState<string | null>(null);
 
-  // Initialize the draggable-pin map once.
+  // Initialize the draggable-pin map once. Guard against WebGL being
+  // unavailable (some in-app browsers / old devices) so the whole form
+  // doesn't crash — address search + geolocation still set the coordinates.
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return;
-    const map = new maplibregl.Map({
-      container: containerRef.current,
-      style: OPENFREEMAP_STYLE,
-      center: [CARACAS.lng, CARACAS.lat],
-      zoom: CARACAS.zoom,
-      attributionControl: { compact: true },
-    });
+    let map: maplibregl.Map;
+    try {
+      map = new maplibregl.Map({
+        container: containerRef.current,
+        style: OPENFREEMAP_STYLE,
+        center: [CARACAS.lng, CARACAS.lat],
+        zoom: CARACAS.zoom,
+        attributionControl: { compact: true },
+      });
+    } catch (e) {
+      console.error("Mini-map init failed (WebGL?):", e);
+      setMapError(true);
+      return;
+    }
     const marker = new maplibregl.Marker({ color: "#dc2626", draggable: true })
       .setLngLat([CARACAS.lng, CARACAS.lat])
       .addTo(map);
@@ -313,12 +323,22 @@ export default function ReportPage() {
             No se pudo obtener la ubicación. Arrastra el pin rojo en el mapa.
           </p>
         )}
-        {geo !== "denied" && geo !== "error" && (
+        {!mapError && geo !== "denied" && geo !== "error" && (
           <p style={styles.hint}>
             Puedes arrastrar el pin rojo para ajustar la ubicación exacta.
           </p>
         )}
-        <div ref={containerRef} style={styles.map} />
+        {mapError && (
+          <p style={styles.hint}>
+            El mapa no se pudo cargar en tu navegador, pero puedes igual buscar
+            la dirección arriba o usar tu ubicación.
+          </p>
+        )}
+        {/* Keep mounted (the effect targets it) but collapse if WebGL failed. */}
+        <div
+          ref={containerRef}
+          style={mapError ? { display: "none" } : styles.map}
+        />
       </section>
 
       <section>
