@@ -7,7 +7,6 @@ import { severityInfo, SEVERITIES } from "@/lib/severity";
 import { CARACAS, shareApp, SHARE_URL } from "@/lib/share";
 import { fetchAcopios, type AcopioRow } from "@/lib/acopios";
 import { fetchPersons, type PersonRow } from "@/lib/persons";
-import { subscribeToPush, pushPermission } from "@/lib/push";
 import {
   RESUMEN_STATS,
   RESUMEN_SOURCE,
@@ -577,7 +576,6 @@ export default function MapPage() {
   const [heatmap, setHeatmap] = useState(false);
   const [copied, setCopied] = useState(false); // "link copied" toast
   const [resumenOpen, setResumenOpen] = useState(false); // stats modal
-  const [pushState, setPushState] = useState<"idle" | "on" | "denied" | "off">("off");
   // True when the browser can't create a WebGL context (some in-app browsers,
   // old devices). We then show a no-map fallback instead of a blank crash.
   const [mapError, setMapError] = useState(false);
@@ -860,20 +858,6 @@ export default function MapPage() {
     }
   }
 
-  useEffect(() => {
-    const p = pushPermission();
-    if (p === "unsupported") setPushState("off");
-    else if (p === "granted") setPushState("on");
-    else if (p === "denied") setPushState("denied");
-    else setPushState("off");
-  }, []);
-
-  async function handleSubscribe() {
-    if (pushState === "on") return;
-    const ok = await subscribeToPush();
-    setPushState(ok ? "on" : "denied");
-  }
-
   // Scroll back to the map and fly to a building's pin + open its popup.
   function flyToReport(r: ReportRow) {
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -967,16 +951,6 @@ export default function MapPage() {
             📊 {count == null ? "…" : count.toLocaleString("es-VE")} edificios ›
           </button>
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap", justifyContent: "flex-end" }}>
-            <button
-              style={styles.toggle}
-              onClick={handleSubscribe}
-              disabled={pushState === "on"}
-            >
-              {pushState === "on" ? "🔔 Activado" : "🔔 Avísame"}
-            </button>
-            <a style={styles.toggle} href="/acopio">
-              📦 Acopio
-            </a>
             <a
               style={styles.toggle}
               href="https://venezuelareporta.org/"
