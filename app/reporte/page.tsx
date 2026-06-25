@@ -128,25 +128,40 @@ export default function ReportPage() {
       setDone(true);
       return;
     }
+    // Photo is required.
+    if (!file) {
+      setError("Agrega una foto del edificio para enviar el reporte.");
+      return;
+    }
     setSubmitting(true);
     setError(null);
     try {
       let photo_url: string | null = null;
-      if (file) {
-        // Compress hard — free-tier storage is only 1 GB and phone photos are huge.
-        const compressed = await imageCompression(file, {
+      // Compress hard — free-tier storage is only 1 GB and phone photos are
+      // huge. But compression uses a <canvas>, which can fail on some formats
+      // (e.g. iPhone HEIC on browsers that can't decode it). If it throws, fall
+      // back to uploading the original file rather than blocking the user.
+      let toUpload: File | Blob = file;
+      let contentType = file.type || "image/jpeg";
+      try {
+        toUpload = await imageCompression(file, {
           maxSizeMB: 0.6,
           maxWidthOrHeight: 1280,
           useWebWorker: true,
         });
-        const path = `${crypto.randomUUID()}.jpg`;
-        const { error: upErr } = await supabase.storage
-          .from(PHOTOS_BUCKET)
-          .upload(path, compressed, { contentType: "image/jpeg" });
-        if (upErr) throw upErr;
-        photo_url = supabase.storage.from(PHOTOS_BUCKET).getPublicUrl(path)
-          .data.publicUrl;
+        contentType = "image/jpeg";
+      } catch (compErr) {
+        console.warn("Compression failed, uploading original:", compErr);
       }
+      // Keep the original extension so the bucket serves the right type.
+      const ext = (file.name.split(".").pop() || "jpg").toLowerCase();
+      const path = `${crypto.randomUUID()}.${ext}`;
+      const { error: upErr } = await supabase.storage
+        .from(PHOTOS_BUCKET)
+        .upload(path, toUpload, { contentType });
+      if (upErr) throw upErr;
+      photo_url = supabase.storage.from(PHOTOS_BUCKET).getPublicUrl(path)
+        .data.publicUrl;
 
       // No .select() chained on purpose: supabase-js only reads the row back
       // when you call .select(), and our restrictive RLS SELECT policy would
@@ -327,15 +342,22 @@ export default function ReportPage() {
       </section>
 
       <section>
-        <label style={styles.label}>3. Foto (opcional)</label>
+        <label style={styles.label}>3. Foto</label>
+        {/* No `capture` attr → lets the user pick the camera OR an existing
+            photo from the gallery. `capture` forced camera-only on phones. */}
         <input
           type="file"
           accept="image/*"
-          capture="environment"
           onChange={(e) => setFile(e.target.files?.[0] ?? null)}
           style={styles.file}
         />
-        {file && <p style={styles.hint}>Foto seleccionada: {file.name}</p>}
+        {file ? (
+          <p style={styles.hint}>Foto seleccionada: {file.name}</p>
+        ) : (
+          <p style={styles.hint}>
+            Toma una foto o elige una de tu galería. Es obligatoria.
+          </p>
+        )}
       </section>
 
       <section>
@@ -353,7 +375,7 @@ export default function ReportPage() {
 
       <button
         className="btn btn-primary"
-        disabled={severity == null || submitting}
+        disabled={severity == null || !file || submitting}
         onClick={submit}
         style={{ marginTop: 8 }}
       >
