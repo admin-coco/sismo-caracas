@@ -5,6 +5,14 @@ import maplibregl from "maplibre-gl";
 import { supabase, type ReportRow } from "@/lib/supabase";
 import { severityInfo } from "@/lib/severity";
 import { CARACAS, whatsappShareUrl } from "@/lib/share";
+import {
+  fetchContributions,
+  addContribution,
+  uploadContributionPhoto,
+  hasVoted,
+  recordVote,
+  type ContributionRow,
+} from "@/lib/contributions";
 
 const OPENFREEMAP_STYLE = "https://tiles.openfreemap.org/styles/liberty";
 const SRC = "reports";
@@ -16,6 +24,7 @@ function toGeoJSON(rows: ReportRow[]) {
       type: "Feature" as const,
       geometry: { type: "Point" as const, coordinates: [r.lng, r.lat] },
       properties: {
+        id: r.id,
         severity: r.severity,
         place: r.place ?? "",
         photo_url: r.photo_url ?? "",
@@ -24,6 +33,145 @@ function toGeoJSON(rows: ReportRow[]) {
       },
     })),
   };
+}
+
+const esc = (s: string) =>
+  s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+
+// Builds the interactive popup DOM node: report details + live community
+// votes + extra photos/comments + an inline "add" form. Everything is public.
+function buildPopupNode(p: Record<string, string>): HTMLElement {
+  const reportId = p.id;
+  const info = severityInfo(Number(p.severity));
+  const when = new Date(p.created_at).toLocaleString("es-VE");
+
+  const root = document.createElement("div");
+  root.style.cssText =
+    "font-family:system-ui;color:#0f172a;max-width:260px;font-size:14px;max-height:60vh;overflow-y:auto";
+
+  const place = p.place
+    ? `<div style="font-weight:600;margin-top:4px">${esc(p.place)}</div>`
+    : "";
+  const note = p.note
+    ? `<div style="margin-top:6px">${esc(p.note)}</div>`
+    : "";
+  const img = p.photo_url
+    ? `<img src="${esc(p.photo_url)}" style="width:100%;border-radius:8px;margin-top:6px"/>`
+    : "";
+
+  root.innerHTML = `
+    <strong style="color:${info.color}">${info.emoji} ${info.label}</strong>
+    ${place}${note}${img}
+    <div style="color:#64748b;font-size:11px;margin-top:6px">${when}</div>
+    <div data-votes style="display:flex;gap:8px;margin-top:10px"></div>
+    <div data-contrib style="margin-top:8px"></div>
+    <button data-addbtn style="width:100%;margin-top:8px;padding:8px;border:none;border-radius:8px;background:#1e293b;color:#fff;font-weight:600;cursor:pointer">➕ Añadir foto o comentario</button>
+    <div data-form style="display:none;margin-top:8px"></div>
+  `;
+
+  const votesEl = root.querySelector("[data-votes]") as HTMLElement;
+  const contribEl = root.querySelector("[data-contrib]") as HTMLElement;
+  const addBtn = root.querySelector("[data-addbtn]") as HTMLButtonElement;
+  const formEl = root.querySelector("[data-form]") as HTMLElement;
+
+  // --- render the vote row (with live tallies) ---
+  function renderVotes(rows: ContributionRow[]) {
+    const real = rows.filter((r) => r.kind === "vote_real").length;
+    const fake = rows.filter((r) => r.kind === "vote_fake").length;
+    const voted = hasVoted(reportId);
+    const pill = (bg: string) =>
+      `flex:1;padding:8px;border:none;border-radius:8px;background:${bg};color:#fff;font-weight:700;cursor:${voted ? "default" : "pointer"};opacity:${voted ? 0.7 : 1}`;
+    votesEl.innerHTML = `
+      <button data-real style="${pill("#16a34a")}" ${voted ? "disabled" : ""}>👍 Real · ${real}</button>
+      <button data-fake style="${pill("#dc2626")}" ${voted ? "disabled" : ""}>👎 Falso · ${fake}</button>
+    `;
+    if (!voted) {
+      const vote = async (kind: "vote_real" | "vote_fake") => {
+        recordVote(reportId, kind);
+        try {
+          await addContribution({ reportId, kind });
+        } catch (e) {
+          console.error(e);
+        }
+        load();
+      };
+      (votesEl.querySelector("[data-real]") as HTMLButtonElement).onclick = () =>
+        vote("vote_real");
+      (votesEl.querySelector("[data-fake]") as HTMLButtonElement).onclick = () =>
+        vote("vote_fake");
+    }
+  }
+
+  // --- render public photos & comments ---
+  function renderContribs(rows: ContributionRow[]) {
+    const items = rows.filter(
+      (r) => r.kind === "comment" || r.kind === "photo"
+    );
+    contribEl.innerHTML = items
+      .map((r) => {
+        if (r.kind === "photo" && r.photo_url)
+          return `<img src="${esc(r.photo_url)}" style="width:100%;border-radius:8px;margin-top:6px"/>`;
+        if (r.kind === "comment" && r.comment)
+          return `<div style="background:#f1f5f9;border-radius:8px;padding:6px 8px;margin-top:6px">💬 ${esc(r.comment)}</div>`;
+        return "";
+      })
+      .join("");
+  }
+
+  async function load() {
+    const rows = await fetchContributions(reportId);
+    renderVotes(rows);
+    renderContribs(rows);
+  }
+
+  // --- inline add form (photo + comment) ---
+  let formOpen = false;
+  addBtn.onclick = () => {
+    formOpen = !formOpen;
+    formEl.style.display = formOpen ? "block" : "none";
+    if (formOpen && !formEl.innerHTML) {
+      formEl.innerHTML = `
+        <input data-file type="file" accept="image/*" capture="environment" style="width:100%;font-size:13px;margin-bottom:6px"/>
+        <textarea data-text maxlength="280" placeholder="Comentario (opcional)…" style="width:100%;min-height:54px;padding:8px;border-radius:8px;border:1px solid #cbd5e1;font-size:13px"></textarea>
+        <button data-send style="width:100%;margin-top:6px;padding:8px;border:none;border-radius:8px;background:#dc2626;color:#fff;font-weight:700;cursor:pointer">Enviar</button>
+        <div data-msg style="font-size:12px;color:#64748b;margin-top:4px"></div>
+      `;
+      const fileInput = formEl.querySelector("[data-file]") as HTMLInputElement;
+      const textInput = formEl.querySelector("[data-text]") as HTMLTextAreaElement;
+      const sendBtn = formEl.querySelector("[data-send]") as HTMLButtonElement;
+      const msg = formEl.querySelector("[data-msg]") as HTMLElement;
+      sendBtn.onclick = async () => {
+        const file = fileInput.files?.[0];
+        const text = textInput.value.trim();
+        if (!file && !text) {
+          msg.textContent = "Añade una foto o un comentario.";
+          return;
+        }
+        sendBtn.disabled = true;
+        msg.textContent = "Enviando…";
+        try {
+          if (file) {
+            const url = await uploadContributionPhoto(file);
+            await addContribution({ reportId, kind: "photo", photoUrl: url });
+          }
+          if (text) {
+            await addContribution({ reportId, kind: "comment", comment: text });
+          }
+          formEl.style.display = "none";
+          formOpen = false;
+          formEl.innerHTML = "";
+          load();
+        } catch (e) {
+          console.error(e);
+          msg.textContent = "No se pudo enviar. Intenta de nuevo.";
+          sendBtn.disabled = false;
+        }
+      };
+    }
+  };
+
+  load();
+  return root;
 }
 
 export default function MapPage() {
@@ -174,31 +322,14 @@ export default function MapPage() {
 
       loadedRef.current = true;
 
-      // Tap a single point → popup with photo / severity / time.
+      // Tap a single point → interactive popup (details + votes + photos/comments).
       map.on("click", "points", (e) => {
         const f = e.features?.[0];
         if (!f) return;
         const p = f.properties as Record<string, string>;
-        const info = severityInfo(Number(p.severity));
-        const when = new Date(p.created_at).toLocaleString("es-VE");
-        const img = p.photo_url
-          ? `<img src="${p.photo_url}" style="width:100%;border-radius:8px;margin-top:6px"/>`
-          : "";
-        const place = p.place
-          ? `<div style="font-weight:600;margin-top:4px">${p.place}</div>`
-          : "";
-        const note = p.note
-          ? `<div style="margin-top:6px">${p.note}</div>`
-          : "";
-        new maplibregl.Popup({ maxWidth: "260px" })
+        new maplibregl.Popup({ maxWidth: "280px" })
           .setLngLat((f.geometry as GeoJSON.Point).coordinates as [number, number])
-          .setHTML(
-            `<div style="font-family:system-ui;color:#0f172a">
-               <strong style="color:${info.color}">${info.emoji} ${info.label}</strong>
-               ${place}${note}${img}
-               <div style="color:#64748b;font-size:11px;margin-top:6px">${when}</div>
-             </div>`
-          )
+          .setDOMContent(buildPopupNode(p))
           .addTo(map);
       });
 
