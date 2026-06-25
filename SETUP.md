@@ -133,6 +133,34 @@ Then:
 
 > iOS note: web push only works if the user adds the site to their Home Screen.
 
+### 1e. Personas desaparecidas (missing persons)
+
+```sql
+create table public.missing_persons (
+  id          uuid primary key default gen_random_uuid(),
+  lat         double precision not null,
+  lng         double precision not null,
+  first_name  text not null,
+  last_name   text not null,
+  cedula      text,
+  phone       text,
+  photo_url   text,
+  note        text,
+  report_id   uuid references public.reports(id) on delete set null,
+  found       boolean not null default false,
+  approved    boolean not null default true,
+  created_at  timestamptz not null default now()
+);
+create index missing_persons_created_idx on public.missing_persons (created_at desc);
+
+alter table public.missing_persons enable row level security;
+
+create policy "anon insert" on public.missing_persons
+  for insert to anon with check (true);
+create policy "anon read approved" on public.missing_persons
+  for select to anon using (approved = true);
+```
+
 ## 2. Storage bucket for photos
 
 1. **Storage** → New bucket → name it exactly **`photos`** → toggle **Public bucket** ON → create.

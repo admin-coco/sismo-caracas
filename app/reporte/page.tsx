@@ -8,6 +8,7 @@ import { SEVERITIES } from "@/lib/severity";
 import { CARACAS, shareApp } from "@/lib/share";
 import { searchAddress, type GeoResult } from "@/lib/geocode";
 import { subscribeToPush, pushSupported } from "@/lib/push";
+import { addPerson } from "@/lib/persons";
 
 const OPENFREEMAP_STYLE = "https://tiles.openfreemap.org/styles/dark";
 
@@ -36,6 +37,25 @@ export default function ReportPage() {
   const [mapError, setMapError] = useState(false); // WebGL/mini-map unavailable
   const [notify, setNotify] = useState(false); // opt-in to push on new reports
   const [error, setError] = useState<string | null>(null);
+
+  // Report type: building damage vs missing person. (Centro de ayuda routes
+  // to /acopio.) Optional ?building=<id> links a person to a building.
+  const [reportType, setReportType] = useState<"edificio" | "persona">("edificio");
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [cedula, setCedula] = useState("");
+  const [phone, setPhone] = useState("");
+  const [linkedBuilding, setLinkedBuilding] = useState<string | null>(null);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("tipo") === "persona") setReportType("persona");
+    const b = params.get("building");
+    if (b) {
+      setReportType("persona");
+      setLinkedBuilding(b);
+    }
+  }, []);
 
   // Initialize the draggable-pin map once. Guard against WebGL being
   // unavailable (some in-app browsers / old devices) so the whole form
@@ -133,15 +153,69 @@ export default function ReportPage() {
     setResults([]);
   }
 
+  // Compress (best-effort) + upload a photo, return its public URL.
+  async function uploadPhoto(f: File): Promise<string> {
+    let toUpload: File | Blob = f;
+    let contentType = f.type || "image/jpeg";
+    try {
+      toUpload = await imageCompression(f, {
+        maxSizeMB: 0.6,
+        maxWidthOrHeight: 1280,
+        useWebWorker: true,
+      });
+      contentType = "image/jpeg";
+    } catch (compErr) {
+      console.warn("Compression failed, uploading original:", compErr);
+    }
+    const ext = (f.name.split(".").pop() || "jpg").toLowerCase();
+    const path = `${crypto.randomUUID()}.${ext}`;
+    const { error: upErr } = await supabase.storage
+      .from(PHOTOS_BUCKET)
+      .upload(path, toUpload, { contentType });
+    if (upErr) throw upErr;
+    return supabase.storage.from(PHOTOS_BUCKET).getPublicUrl(path).data.publicUrl;
+  }
+
   async function submit() {
-    if (severity == null) return;
-    // Honeypot tripped → almost certainly a bot. Pretend it worked (so it
-    // won't retry) but write nothing.
+    // Honeypot tripped → bot. Pretend success, write nothing.
     if (hp.trim() !== "") {
       setDone(true);
       return;
     }
-    // Photo is required.
+
+    if (reportType === "persona") {
+      if (!firstName.trim() || !lastName.trim()) {
+        setError("Escribe el nombre y apellido de la persona.");
+        return;
+      }
+      setSubmitting(true);
+      setError(null);
+      try {
+        const photo_url = file ? await uploadPhoto(file) : undefined;
+        await addPerson({
+          lat: coords.lat,
+          lng: coords.lng,
+          first_name: firstName.trim().slice(0, 80),
+          last_name: lastName.trim().slice(0, 80),
+          cedula: cedula.trim() ? cedula.trim().slice(0, 20) : undefined,
+          phone: phone.trim() ? phone.trim().slice(0, 30) : undefined,
+          note: note.trim() ? note.trim().slice(0, 280) : undefined,
+          photo_url,
+          report_id: linkedBuilding ?? undefined,
+        });
+        if (notify) subscribeToPush().catch(() => {});
+        setDone(true);
+      } catch (e) {
+        console.error(e);
+        setError("No se pudo enviar. Verifica tu conexión e intenta de nuevo.");
+      } finally {
+        setSubmitting(false);
+      }
+      return;
+    }
+
+    // --- Building report ---
+    if (severity == null) return;
     if (!file) {
       setError("Agrega una foto del edificio para enviar el reporte.");
       return;
@@ -149,36 +223,9 @@ export default function ReportPage() {
     setSubmitting(true);
     setError(null);
     try {
-      let photo_url: string | null = null;
-      // Compress hard — free-tier storage is only 1 GB and phone photos are
-      // huge. But compression uses a <canvas>, which can fail on some formats
-      // (e.g. iPhone HEIC on browsers that can't decode it). If it throws, fall
-      // back to uploading the original file rather than blocking the user.
-      let toUpload: File | Blob = file;
-      let contentType = file.type || "image/jpeg";
-      try {
-        toUpload = await imageCompression(file, {
-          maxSizeMB: 0.6,
-          maxWidthOrHeight: 1280,
-          useWebWorker: true,
-        });
-        contentType = "image/jpeg";
-      } catch (compErr) {
-        console.warn("Compression failed, uploading original:", compErr);
-      }
-      // Keep the original extension so the bucket serves the right type.
-      const ext = (file.name.split(".").pop() || "jpg").toLowerCase();
-      const path = `${crypto.randomUUID()}.${ext}`;
-      const { error: upErr } = await supabase.storage
-        .from(PHOTOS_BUCKET)
-        .upload(path, toUpload, { contentType });
-      if (upErr) throw upErr;
-      photo_url = supabase.storage.from(PHOTOS_BUCKET).getPublicUrl(path)
-        .data.publicUrl;
-
-      // No .select() chained on purpose: supabase-js only reads the row back
-      // when you call .select(), and our restrictive RLS SELECT policy would
-      // block that read-back and surface a spurious error.
+      const photo_url = await uploadPhoto(file);
+      // No .select() chained on purpose: the restrictive RLS SELECT policy
+      // would block the read-back and surface a spurious error.
       const { error: insErr } = await supabase.from("reports").insert({
         lat: coords.lat,
         lng: coords.lng,
@@ -188,7 +235,6 @@ export default function ReportPage() {
         photo_url,
       });
       if (insErr) throw insErr;
-      // If the user opted in, subscribe them to push (asks permission).
       if (notify) {
         subscribeToPush().catch(() => {});
       }
@@ -265,13 +311,44 @@ export default function ReportPage() {
       />
       <header style={styles.header}>
         <div>
-          <h1 style={styles.title}>🏚️ Reportar edificio dañado</h1>
+          <h1 style={styles.title}>📝 Reportar</h1>
           <p style={styles.sub}>Terremoto Venezuela · mapa colaborativo</p>
         </div>
         <a href="/" style={styles.verMapa}>
           🗺️ Ver mapa
         </a>
       </header>
+
+      {/* Type selector */}
+      <div style={styles.typeRow}>
+        <button
+          onClick={() => setReportType("edificio")}
+          style={{
+            ...styles.typeBtn,
+            ...(reportType === "edificio" ? styles.typeBtnActive : {}),
+          }}
+        >
+          🏚️ Edificio
+        </button>
+        <button
+          onClick={() => setReportType("persona")}
+          style={{
+            ...styles.typeBtn,
+            ...(reportType === "persona" ? styles.typeBtnActive : {}),
+          }}
+        >
+          🧍 Persona desaparecida
+        </button>
+        <a href="/acopio" style={styles.typeBtn}>
+          📦 Centro de ayuda
+        </a>
+      </div>
+
+      {linkedBuilding && reportType === "persona" && (
+        <p style={{ ...styles.hint, color: "#15803d" }}>
+          📍 Esta persona se vinculará al edificio seleccionado en el mapa.
+        </p>
+      )}
 
       <div style={styles.grid}>
         {/* Left column: location */}
@@ -329,44 +406,96 @@ export default function ReportPage() {
           </p>
         </div>
 
-        {/* Right column: damage, photo, note */}
+        {/* Right column: type-specific fields */}
         <div>
-          <label style={styles.label}>2. Nivel de daño</label>
-          <select
-            value={severity ?? ""}
-            onChange={(e) =>
-              setSeverity(e.target.value ? (Number(e.target.value) as Severity) : null)
-            }
-            style={{
-              ...styles.input,
-              borderLeft: severity
-                ? `6px solid ${SEVERITIES.find((s) => s.value === severity)!.color}`
-                : "6px solid transparent",
-            }}
-          >
-            <option value="">Selecciona el nivel…</option>
-            {SEVERITIES.map((s) => (
-              <option key={s.value} value={s.value}>
-                {s.emoji} {s.label}
-              </option>
-            ))}
-          </select>
+          {reportType === "edificio" ? (
+            <>
+              <label style={styles.label}>2. Nivel de daño</label>
+              <select
+                value={severity ?? ""}
+                onChange={(e) =>
+                  setSeverity(e.target.value ? (Number(e.target.value) as Severity) : null)
+                }
+                style={{
+                  ...styles.input,
+                  borderLeft: severity
+                    ? `6px solid ${SEVERITIES.find((s) => s.value === severity)!.color}`
+                    : "6px solid transparent",
+                }}
+              >
+                <option value="">Selecciona el nivel…</option>
+                {SEVERITIES.map((s) => (
+                  <option key={s.value} value={s.value}>
+                    {s.emoji} {s.label}
+                  </option>
+                ))}
+              </select>
 
-          <label style={styles.label}>3. Foto (obligatoria)</label>
-          <input
-            type="file"
-            accept="image/*"
-            onChange={(e) => setFile(e.target.files?.[0] ?? null)}
-            style={styles.file}
-          />
-          {file && <p style={styles.hint}>✓ {file.name}</p>}
+              <label style={styles.label}>3. Foto (obligatoria)</label>
+              <input
+                type="file"
+                accept="image/*"
+                onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+                style={styles.file}
+              />
+              {file && <p style={styles.hint}>✓ {file.name}</p>}
+            </>
+          ) : (
+            <>
+              <label style={styles.label}>2. Datos de la persona</label>
+              <input
+                type="text"
+                value={firstName}
+                maxLength={80}
+                onChange={(e) => setFirstName(e.target.value)}
+                placeholder="Nombre"
+                style={styles.input}
+              />
+              <input
+                type="text"
+                value={lastName}
+                maxLength={80}
+                onChange={(e) => setLastName(e.target.value)}
+                placeholder="Apellido"
+                style={styles.input}
+              />
+              <input
+                type="text"
+                value={cedula}
+                maxLength={20}
+                onChange={(e) => setCedula(e.target.value)}
+                placeholder="Cédula (opcional)"
+                style={styles.input}
+              />
+              <input
+                type="tel"
+                value={phone}
+                maxLength={30}
+                onChange={(e) => setPhone(e.target.value)}
+                placeholder="Teléfono de contacto (opcional)"
+                style={styles.input}
+              />
+              <label style={styles.label}>3. Foto de la persona</label>
+              <input
+                type="file"
+                accept="image/*"
+                onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+                style={styles.file}
+              />
+              {file && <p style={styles.hint}>✓ {file.name}</p>}
+            </>
+          )}
 
           <label style={styles.label}>4. Nota (opcional)</label>
           <textarea
             value={note}
             maxLength={280}
             onChange={(e) => setNote(e.target.value)}
-            placeholder="Ej: grietas en la fachada…"
+            placeholder={
+              reportType === "persona"
+                ? "Ej: última vez visto, ropa que llevaba…"
+                : "Ej: grietas en la fachada…"
+            }
             style={styles.textarea}
           />
         </div>
@@ -388,11 +517,20 @@ export default function ReportPage() {
 
       <button
         className="btn btn-primary"
-        disabled={severity == null || !file || submitting}
+        disabled={
+          submitting ||
+          (reportType === "edificio"
+            ? severity == null || !file
+            : !firstName.trim() || !lastName.trim())
+        }
         onClick={submit}
         style={{ marginTop: 8, padding: 13 }}
       >
-        {submitting ? "Enviando…" : "Enviar reporte"}
+        {submitting
+          ? "Enviando…"
+          : reportType === "persona"
+          ? "Reportar persona desaparecida"
+          : "Enviar reporte"}
       </button>
 
       <button
@@ -468,6 +606,30 @@ const styles: Record<string, React.CSSProperties> = {
   // Single column — clean and easy to fill top to bottom.
   grid: {
     display: "block",
+  },
+  typeRow: {
+    display: "flex",
+    gap: 6,
+    margin: "8px 0 10px",
+    flexWrap: "wrap",
+  },
+  typeBtn: {
+    flex: "1 1 30%",
+    textAlign: "center",
+    padding: "10px 6px",
+    borderRadius: 10,
+    border: "1px solid var(--border)",
+    background: "var(--panel)",
+    color: "var(--text)",
+    fontWeight: 700,
+    fontSize: 13,
+    textDecoration: "none",
+    cursor: "pointer",
+  },
+  typeBtnActive: {
+    background: "var(--rojo)",
+    color: "#fff",
+    borderColor: "var(--rojo)",
   },
   checkRow: {
     display: "flex",

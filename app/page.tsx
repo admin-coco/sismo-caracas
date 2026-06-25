@@ -6,6 +6,7 @@ import { supabase, type ReportRow } from "@/lib/supabase";
 import { severityInfo, SEVERITIES } from "@/lib/severity";
 import { CARACAS, shareApp, SHARE_URL } from "@/lib/share";
 import { fetchAcopios, type AcopioRow } from "@/lib/acopios";
+import { fetchPersons, type PersonRow } from "@/lib/persons";
 import { subscribeToPush, pushPermission } from "@/lib/push";
 import {
   RESUMEN_STATS,
@@ -24,6 +25,25 @@ import {
 const OPENFREEMAP_STYLE = "https://tiles.openfreemap.org/styles/dark";
 const SRC = "reports";
 const ACOPIO_SRC = "acopios";
+const PERSON_SRC = "persons";
+
+function personsToGeoJSON(rows: PersonRow[]) {
+  return {
+    type: "FeatureCollection" as const,
+    features: rows.map((p) => ({
+      type: "Feature" as const,
+      geometry: { type: "Point" as const, coordinates: [p.lng, p.lat] },
+      properties: {
+        name: `${p.first_name} ${p.last_name}`,
+        cedula: p.cedula ?? "",
+        phone: p.phone ?? "",
+        photo_url: p.photo_url ?? "",
+        note: p.note ?? "",
+        found: p.found ? "1" : "",
+      },
+    })),
+  };
+}
 
 function acopiosToGeoJSON(rows: AcopioRow[]) {
   return {
@@ -99,6 +119,7 @@ function buildPopupNode(p: Record<string, string>): HTMLElement {
     <div data-contrib style="margin-top:8px"></div>
     <button data-addbtn style="width:100%;margin-top:8px;padding:8px;border:none;border-radius:8px;background:#1e293b;color:#fff;font-weight:600;cursor:pointer">➕ Añadir foto o comentario</button>
     <div data-form style="display:none;margin-top:8px"></div>
+    <a href="/reporte?building=${esc(reportId)}" style="display:block;text-align:center;margin-top:8px;padding:8px;border-radius:8px;background:#7c3aed;color:#fff;font-weight:700;text-decoration:none;font-size:13px">🧍 Reportar persona desaparecida aquí</a>
   `;
 
   const votesEl = root.querySelector("[data-votes]") as HTMLElement;
@@ -307,7 +328,7 @@ function BuildingGrid({
         </div>
       )}
       <a className="btn btn-primary" href="/reporte" style={{ marginTop: 16 }}>
-        ➕ Reportar un edificio
+        ➕ Reportar
       </a>
 
       {selected && (
@@ -602,6 +623,7 @@ export default function MapPage() {
   const [count, setCount] = useState<number | null>(null);
   const [reports, setReports] = useState<ReportRow[]>([]); // for the grid below
   const [acopioCount, setAcopioCount] = useState(0);
+  const [personCount, setPersonCount] = useState(0);
   const [heatmap, setHeatmap] = useState(false);
   const [copied, setCopied] = useState(false); // "link copied" toast
   const [resumenOpen, setResumenOpen] = useState(false); // stats modal
@@ -758,6 +780,60 @@ export default function MapPage() {
           .addTo(map);
       });
 
+      // Missing persons: purple pins, separate source.
+      const persons = await fetchPersons();
+      setPersonCount(persons.length);
+      map.addSource(PERSON_SRC, {
+        type: "geojson",
+        data: personsToGeoJSON(persons),
+      });
+      map.addLayer({
+        id: "persons",
+        type: "circle",
+        source: PERSON_SRC,
+        paint: {
+          "circle-color": "#7c3aed",
+          "circle-radius": [
+            "interpolate",
+            ["linear"],
+            ["zoom"],
+            8,
+            6,
+            12,
+            9,
+            16,
+            13,
+          ],
+          "circle-stroke-width": 3,
+          "circle-stroke-color": "#ddd6fe",
+        },
+      });
+      map.on("click", "persons", (e) => {
+        const f = e.features?.[0];
+        if (!f) return;
+        const p = f.properties as Record<string, string>;
+        const img = p.photo_url
+          ? `<img src="${p.photo_url}" style="width:100%;border-radius:8px;margin-top:6px"/>`
+          : "";
+        const cedula = p.cedula
+          ? `<div style="margin-top:4px">C.I.: ${p.cedula}</div>`
+          : "";
+        const phone = p.phone
+          ? `<div style="margin-top:4px;color:#7c3aed;font-weight:600">📞 ${p.phone}</div>`
+          : "";
+        const note = p.note ? `<div style="margin-top:6px">${p.note}</div>` : "";
+        new maplibregl.Popup({ maxWidth: "260px" })
+          .setLngLat((f.geometry as GeoJSON.Point).coordinates as [number, number])
+          .setHTML(
+            `<div style="font-family:system-ui;color:#0f172a">
+               <strong style="color:#7c3aed">🧍 Desaparecido${p.found ? " · ENCONTRADO ✅" : ""}</strong>
+               <div style="font-weight:700;margin-top:4px">${p.name}</div>
+               ${cedula}${phone}${note}${img}
+             </div>`
+          )
+          .addTo(map);
+      });
+
       // Heatmap layer (hidden until toggled), weighted by severity.
       map.addLayer({
         id: "heat",
@@ -894,7 +970,7 @@ export default function MapPage() {
           </p>
           <div style={{ display: "flex", flexDirection: "column", gap: 12, width: "100%", maxWidth: 320 }}>
             <a className="btn btn-primary" href="/reporte">
-              ➕ Reportar edificio
+              ➕ Reportar
             </a>
             <button className="btn btn-whatsapp" onClick={handleShare}>
               {copied ? "✅ ¡Enlace copiado!" : "📲 Compartir"}
@@ -954,7 +1030,7 @@ export default function MapPage() {
 
         <div style={styles.bottomBar}>
           <a className="btn btn-primary" href="/reporte">
-            ➕ Reportar edificio
+            ➕ Reportar
           </a>
           <button className="btn btn-whatsapp" onClick={handleShare}>
             {copied ? "✅ ¡Copiado!" : "📲 Compartir"}
@@ -994,6 +1070,12 @@ export default function MapPage() {
                 <span style={{ color: "var(--muted)" }}>Centros de acopio</span>
                 <span style={{ color: "#15803d", fontWeight: 800 }}>
                   {acopioCount.toLocaleString("es-VE")}
+                </span>
+              </div>
+              <div style={styles.statRow}>
+                <span style={{ color: "var(--muted)" }}>Desaparecidos reportados</span>
+                <span style={{ color: "#7c3aed", fontWeight: 800 }}>
+                  {personCount.toLocaleString("es-VE")}
                 </span>
               </div>
 
