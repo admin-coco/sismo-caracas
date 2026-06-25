@@ -235,7 +235,12 @@ function BuildingGrid({
   reports: ReportRow[];
   onLocate: (r: ReportRow) => void;
 }) {
-  const recent = reports.slice(0, 24); // newest first (already ordered)
+  // Show reports WITH a photo first (more useful/visual), newest-first within
+  // each group; `reports` is already ordered newest-first so a stable sort
+  // only needs to push photo-less ones to the back.
+  const recent = [...reports]
+    .sort((a, b) => (a.photo_url ? 0 : 1) - (b.photo_url ? 0 : 1))
+    .slice(0, 24);
   const [selected, setSelected] = useState<ReportRow | null>(null);
   return (
     <section id="grid" style={gridStyles.wrap}>
