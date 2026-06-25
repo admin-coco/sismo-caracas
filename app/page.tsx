@@ -200,6 +200,9 @@ export default function MapPage() {
   const loadedRef = useRef(false);
   const [count, setCount] = useState<number | null>(null);
   const [heatmap, setHeatmap] = useState(false);
+  // True when the browser can't create a WebGL context (some in-app browsers,
+  // old devices). We then show a no-map fallback instead of a blank crash.
+  const [mapError, setMapError] = useState(false);
 
   async function fetchReports(): Promise<ReportRow[]> {
     const { data, error } = await supabase
@@ -226,14 +229,29 @@ export default function MapPage() {
 
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return;
-    const map = new maplibregl.Map({
-      container: containerRef.current,
-      style: OPENFREEMAP_STYLE,
-      center: [CARACAS.lng, CARACAS.lat],
-      zoom: CARACAS.zoom,
-      // Compact attribution collapses to a small ⓘ; the action buttons float
-      // above it (see bottomBar style) so nothing is covered.
-      attributionControl: { compact: true },
+    // WebGL can be unavailable in some in-app browsers / old devices. MapLibre
+    // v4 throws on construction in that case, so we catch and degrade to a
+    // fallback instead of letting an uncaught error blank the page.
+    let map: maplibregl.Map;
+    try {
+      map = new maplibregl.Map({
+        container: containerRef.current,
+        style: OPENFREEMAP_STYLE,
+        center: [CARACAS.lng, CARACAS.lat],
+        zoom: CARACAS.zoom,
+        // Compact attribution collapses to a small ⓘ; the action buttons float
+        // above it (see bottomBar style) so nothing is covered.
+        attributionControl: { compact: true },
+      });
+    } catch (e) {
+      console.error("Map init failed:", e);
+      setMapError(true);
+      fetchReports().then((rows) => setCount(rows.length));
+      return;
+    }
+    map.on("error", (e) => {
+      // A WebGL context failure surfaces here too.
+      if (String(e?.error?.message || "").includes("WebGL")) setMapError(true);
     });
     mapRef.current = map;
 
@@ -405,6 +423,41 @@ export default function MapPage() {
     typeof window !== "undefined"
       ? whatsappShareUrl(window.location.origin)
       : "#";
+
+  if (mapError) {
+    return (
+      <main
+        style={{
+          minHeight: "100dvh",
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center",
+          textAlign: "center",
+          padding: 24,
+          gap: 16,
+        }}
+      >
+        <div style={{ fontSize: 48 }}>🗺️</div>
+        <h1 style={{ margin: 0, fontSize: 22 }}>
+          {count == null ? "…" : count.toLocaleString("es-VE")} edificios
+          reportados
+        </h1>
+        <p style={{ color: "var(--muted)", maxWidth: 340, margin: 0 }}>
+          Tu navegador no puede mostrar el mapa. Prueba abrir este enlace en
+          Chrome o Safari (no dentro de WhatsApp).
+        </p>
+        <div style={{ display: "flex", flexDirection: "column", gap: 12, width: "100%", maxWidth: 320 }}>
+          <a className="btn btn-primary" href="/reporte">
+            ➕ Reportar edificio
+          </a>
+          <a className="btn btn-whatsapp" href={shareUrl}>
+            📲 Compartir
+          </a>
+        </div>
+      </main>
+    );
+  }
 
   return (
     <main style={{ position: "relative", height: "100dvh" }}>
