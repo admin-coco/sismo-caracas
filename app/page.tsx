@@ -952,14 +952,17 @@ export default function MapPage() {
           </button>
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap", justifyContent: "flex-end" }}>
             <a
-              style={styles.toggle}
+              // inline-flex + center so the cross glyph and text sit vertically
+              // centered like the emoji buttons (a bare ✚ is shorter than an
+              // emoji, so it would otherwise ride high in the stretched pill).
+              style={{ ...styles.toggle, display: "inline-flex", alignItems: "center", gap: 5 }}
               href="https://terremotovenezuela.app/#hospitales"
               target="_blank"
               rel="noopener noreferrer"
             >
               {/* No standalone red-cross emoji exists in Unicode, so use a
                   red-styled cross glyph (✚) to get a proper medical cross. */}
-              <span style={{ color: "#dc2626", fontWeight: 900 }}>✚</span>{" "}
+              <span style={{ color: "#dc2626", fontWeight: 900 }} aria-hidden="true">✚</span>
               Hospitales y pacientes
             </a>
             <a
