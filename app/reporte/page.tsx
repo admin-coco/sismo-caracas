@@ -360,7 +360,7 @@ export default function ReportPage() {
             ...(reportType === "persona" ? styles.typeBtnActive : {}),
           }}
         >
-          🧍 Persona desaparecida
+          🧍 Desaparecido
         </button>
         <a href="/acopio" style={styles.typeBtn}>
           📦 Centro de ayuda
