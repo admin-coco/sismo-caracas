@@ -958,7 +958,11 @@ export default function MapPage() {
         <div style={styles.topBar}>
           <button
             style={{ ...styles.counter, border: "none", cursor: "pointer" }}
-            onClick={() => setResumenOpen(true)}
+            onClick={() =>
+              document
+                .getElementById("grid")
+                ?.scrollIntoView({ behavior: "smooth" })
+            }
           >
             📊 {count == null ? "…" : count.toLocaleString("es-VE")} edificios ›
           </button>
@@ -989,16 +993,6 @@ export default function MapPage() {
             </button>
           </div>
         </div>
-
-        {/* Scroll cue: the grid below the full-screen map is easy to miss. */}
-        <button
-          style={styles.scrollCue}
-          onClick={() =>
-            document.getElementById("grid")?.scrollIntoView({ behavior: "smooth" })
-          }
-        >
-          🏚️ Ver edificios reportados ↓
-        </button>
 
         <div style={styles.bottomBar}>
           <a className="btn btn-primary" href="/reporte">
@@ -1164,22 +1158,6 @@ const styles: Record<string, React.CSSProperties> = {
     display: "inline-block",
     whiteSpace: "nowrap",
     boxShadow: "0 1px 4px rgba(0,0,0,0.35)",
-  },
-  scrollCue: {
-    position: "absolute",
-    bottom: "calc(env(safe-area-inset-bottom, 0px) + 86px)",
-    left: "50%",
-    transform: "translateX(-50%)",
-    background: "rgba(250,246,236,0.95)",
-    color: "#1f2937",
-    border: "none",
-    padding: "9px 16px",
-    borderRadius: 999,
-    fontWeight: 700,
-    fontSize: 13,
-    whiteSpace: "nowrap",
-    boxShadow: "0 1px 6px rgba(0,0,0,0.4)",
-    zIndex: 5,
   },
   bottomBar: {
     position: "absolute",
