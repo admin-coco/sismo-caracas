@@ -73,3 +73,17 @@ a {
   bottom: calc(env(safe-area-inset-bottom, 0px) + 78px);
   z-index: 1;
 }
+
+/* Start the compact attribution COLLAPSED — just the small ⓘ icon. The text
+   is hidden until the user taps the icon (license-compliant: attribution is
+   still one tap away). */
+.maplibregl-ctrl-attrib.maplibregl-compact:not(.maplibregl-compact-show)
+  .maplibregl-ctrl-attrib-inner {
+  display: none;
+}
+.maplibregl-ctrl-attrib.maplibregl-compact:not(.maplibregl-compact-show) {
+  padding: 0;
+  margin: 0 10px 10px 0;
+  background: transparent;
+  box-shadow: none;
+}
