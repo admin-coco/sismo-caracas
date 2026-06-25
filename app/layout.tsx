@@ -2,28 +2,27 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 
 // metadataBase makes og:image absolute — WhatsApp REQUIRES an absolute URL.
-// Override NEXT_PUBLIC_SITE_URL in Vercel once the real domain is attached.
 const siteUrl =
-  process.env.NEXT_PUBLIC_SITE_URL ?? "https://sismo-caracas.vercel.app";
+  process.env.NEXT_PUBLIC_SITE_URL ?? "https://sismovenezuela.org";
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
-  title: "Mapa de Daños — Terremoto Caracas",
+  title: "Mapa de Daños — Terremoto Venezuela",
   description:
-    "Mapa colaborativo de edificios dañados por el terremoto en Caracas. Reporta lo que ves y ayuda a entender dónde se necesita ayuda.",
+    "Mapa colaborativo de edificios dañados por el terremoto en Venezuela. Reporta lo que ves y ayuda a entender dónde se necesita ayuda.",
   openGraph: {
     type: "website",
     locale: "es_VE",
     url: siteUrl,
-    title: "Mapa de Daños — Terremoto Caracas",
+    title: "Mapa de Daños — Terremoto Venezuela",
     description:
-      "Reporta y mira en tiempo real los edificios dañados por el terremoto en Caracas.",
+      "Reporta y mira en tiempo real los edificios dañados por el terremoto en Venezuela.",
     images: [
       {
-        url: "/og.jpg?v=1",
+        url: "/og.jpg?v=2",
         width: 1200,
         height: 630,
-        alt: "Mapa de daños del terremoto en Caracas",
+        alt: "Mapa de daños del terremoto en Venezuela",
       },
     ],
   },

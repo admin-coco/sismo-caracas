@@ -1,7 +1,7 @@
 // Canonical public URL we always share.
-export const SHARE_URL = "https://sismocaracas.com";
+export const SHARE_URL = "https://sismovenezuela.org";
 const SHARE_TEXT =
-  "🏚️ Reporta y mira los daños del terremoto en Caracas en el mapa colaborativo:";
+  "🏚️ Reporta y mira los daños del terremoto en Venezuela en el mapa colaborativo:";
 
 // Builds a wa.me deep link that opens WhatsApp's contact picker with a
 // prefilled Spanish message + the app URL. Empty path = share to any contact.
