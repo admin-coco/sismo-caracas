@@ -48,6 +48,9 @@ export default function ReportPage() {
   const [linkedBuilding, setLinkedBuilding] = useState<string | null>(null);
   // Optional building photo on the persona form → creates a linked building.
   const [buildingFile, setBuildingFile] = useState<File | null>(null);
+  const [mapBig, setMapBig] = useState(false); // expanded map modal
+  const bigContainerRef = useRef<HTMLDivElement | null>(null);
+  const bigMapRef = useRef<maplibregl.Map | null>(null);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -94,6 +97,46 @@ export default function ReportPage() {
       markerRef.current = null;
     };
   }, []);
+
+  // Expanded map modal: build a big map when opened, sync coords on drag,
+  // and push the final position back to the small map on close.
+  useEffect(() => {
+    if (!mapBig || !bigContainerRef.current) return;
+    let map: maplibregl.Map;
+    try {
+      map = new maplibregl.Map({
+        container: bigContainerRef.current,
+        style: OPENFREEMAP_STYLE,
+        center: [coords.lng, coords.lat],
+        zoom: 16,
+        attributionControl: { compact: true },
+      });
+    } catch (e) {
+      console.error("Big map init failed:", e);
+      setMapBig(false);
+      return;
+    }
+    const marker = new maplibregl.Marker({ color: "#dc2626", draggable: true })
+      .setLngLat([coords.lng, coords.lat])
+      .addTo(map);
+    marker.on("dragend", () => {
+      const ll = marker.getLngLat();
+      setCoords({ lat: ll.lat, lng: ll.lng });
+      markerRef.current?.setLngLat(ll); // keep the small map in sync
+    });
+    // Also let tapping the map move the pin (easier on a big map).
+    map.on("click", (e) => {
+      marker.setLngLat(e.lngLat);
+      setCoords({ lat: e.lngLat.lat, lng: e.lngLat.lng });
+      markerRef.current?.setLngLat(e.lngLat);
+    });
+    bigMapRef.current = map;
+    setTimeout(() => map.resize(), 50); // ensure it fills the modal
+    return () => {
+      map.remove();
+      bigMapRef.current = null;
+    };
+  }, [mapBig]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Shared by geolocation and address pick: move pin + recenter map + record coords.
   function moveTo(lat: number, lng: number, zoom = 16) {
@@ -418,14 +461,26 @@ export default function ReportPage() {
           >
             {geo === "locating" ? "Localizando…" : "📍 Usar mi ubicación"}
           </button>
-          <div
-            ref={containerRef}
-            style={mapError ? { display: "none" } : styles.map}
-          />
+          <div style={{ position: "relative" }}>
+            <div
+              ref={containerRef}
+              style={mapError ? { display: "none" } : styles.map}
+            />
+            {!mapError && (
+              <button
+                type="button"
+                onClick={() => setMapBig(true)}
+                style={styles.expandBtn}
+                aria-label="Expandir mapa"
+              >
+                ⤢ Expandir
+              </button>
+            )}
+          </div>
           <p style={styles.hint}>
             {mapError
               ? "Busca la dirección o usa tu ubicación."
-              : "Arrastra el pin para ajustar."}
+              : "Arrastra el pin o toca «Expandir» para ajustar mejor."}
           </p>
         </div>
 
@@ -603,6 +658,21 @@ export default function ReportPage() {
         Hecho con amor 💚🇻🇪 por Coco Wallet
       </button>
 
+      {mapBig && (
+        <div style={styles.mapModalOverlay}>
+          <div style={styles.mapModalBar}>
+            <span style={{ fontWeight: 700 }}>📍 Ajusta la ubicación</span>
+            <button onClick={() => setMapBig(false)} style={styles.mapModalDone}>
+              ✓ Listo
+            </button>
+          </div>
+          <div ref={bigContainerRef} style={{ flex: 1 }} />
+          <p style={styles.mapModalHint}>
+            Arrastra el pin o toca el mapa para marcar el lugar exacto.
+          </p>
+        </div>
+      )}
+
       {helpOpen && (
         <div style={styles.overlay} onClick={() => setHelpOpen(false)}>
           <div style={styles.modal} onClick={(e) => e.stopPropagation()}>
@@ -743,6 +813,53 @@ const styles: Record<string, React.CSSProperties> = {
     borderRadius: 12,
     overflow: "hidden",
     marginTop: 6,
+  },
+  expandBtn: {
+    position: "absolute",
+    right: 8,
+    bottom: 8,
+    background: "rgba(250,246,236,0.95)",
+    color: "#1f2937",
+    border: "none",
+    borderRadius: 999,
+    padding: "6px 12px",
+    fontWeight: 700,
+    fontSize: 12,
+    cursor: "pointer",
+    boxShadow: "0 1px 4px rgba(0,0,0,0.35)",
+    zIndex: 2,
+  },
+  mapModalOverlay: {
+    position: "fixed",
+    inset: 0,
+    background: "var(--bg)",
+    display: "flex",
+    flexDirection: "column",
+    zIndex: 100,
+  },
+  mapModalBar: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+    padding: "12px 16px",
+    borderBottom: "1px solid var(--border)",
+  },
+  mapModalDone: {
+    background: "var(--rojo)",
+    color: "#fff",
+    border: "none",
+    borderRadius: 999,
+    padding: "8px 18px",
+    fontWeight: 700,
+    fontSize: 15,
+    cursor: "pointer",
+  },
+  mapModalHint: {
+    margin: 0,
+    padding: "10px 16px calc(env(safe-area-inset-bottom, 0px) + 12px)",
+    textAlign: "center",
+    color: "var(--muted)",
+    fontSize: 13,
   },
   file: {
     width: "100%",
