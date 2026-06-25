@@ -3,8 +3,13 @@
 import { useEffect, useRef, useState } from "react";
 import maplibregl from "maplibre-gl";
 import { supabase, type ReportRow } from "@/lib/supabase";
-import { severityInfo } from "@/lib/severity";
+import { severityInfo, SEVERITIES } from "@/lib/severity";
 import { CARACAS, shareApp } from "@/lib/share";
+import {
+  RESUMEN_STATS,
+  RESUMEN_SOURCE,
+  RESUMEN_DATE,
+} from "@/lib/stats";
 import {
   fetchContributions,
   addContribution,
@@ -14,7 +19,7 @@ import {
   type ContributionRow,
 } from "@/lib/contributions";
 
-const OPENFREEMAP_STYLE = "https://tiles.openfreemap.org/styles/liberty";
+const OPENFREEMAP_STYLE = "https://tiles.openfreemap.org/styles/dark";
 const SRC = "reports";
 
 function toGeoJSON(rows: ReportRow[]) {
@@ -324,6 +329,7 @@ export default function MapPage() {
   const [reports, setReports] = useState<ReportRow[]>([]); // for the grid below
   const [heatmap, setHeatmap] = useState(false);
   const [copied, setCopied] = useState(false); // "link copied" toast
+  const [resumenOpen, setResumenOpen] = useState(false); // stats modal
   // True when the browser can't create a WebGL context (some in-app browsers,
   // old devices). We then show a no-map fallback instead of a blank crash.
   const [mapError, setMapError] = useState(false);
@@ -550,10 +556,12 @@ export default function MapPage() {
         <div ref={containerRef} style={{ position: "absolute", inset: 0 }} />
 
         <div style={styles.topBar}>
-          <div style={styles.counter}>
-            🏚️ {count == null ? "…" : count.toLocaleString("es-VE")} edificios
-            reportados
-          </div>
+          <button
+            style={{ ...styles.counter, border: "none", cursor: "pointer" }}
+            onClick={() => setResumenOpen(true)}
+          >
+            📊 {count == null ? "…" : count.toLocaleString("es-VE")} edificios ›
+          </button>
           <div style={{ display: "flex", gap: 8 }}>
             <a style={styles.toggle} href="/ayuda">
               💚 Ayuda
@@ -572,6 +580,59 @@ export default function MapPage() {
             {copied ? "✅ ¡Copiado!" : "📲 Compartir"}
           </button>
         </div>
+
+        {resumenOpen && (
+          <div style={styles.overlay} onClick={() => setResumenOpen(false)}>
+            <div style={styles.modal} onClick={(e) => e.stopPropagation()}>
+              <button
+                onClick={() => setResumenOpen(false)}
+                style={styles.modalClose}
+                aria-label="Cerrar"
+              >
+                ✕
+              </button>
+              <h2 style={{ margin: "0 0 2px", fontSize: 18 }}>
+                📊 Resumen · {RESUMEN_DATE}
+              </h2>
+              <p style={{ color: "var(--muted)", fontSize: 12, margin: "0 0 14px" }}>
+                {RESUMEN_SOURCE}
+              </p>
+
+              {RESUMEN_STATS.map((s) => (
+                <div key={s.label} style={styles.statRow}>
+                  <span style={{ color: "var(--muted)" }}>{s.label}</span>
+                  <span style={{ color: s.color, fontWeight: 800 }}>{s.value}</span>
+                </div>
+              ))}
+              <div style={styles.statRow}>
+                <span style={{ color: "var(--muted)" }}>Edificios reportados</span>
+                <span style={{ color: "#fbbf24", fontWeight: 800 }}>
+                  {count == null ? "…" : count.toLocaleString("es-VE")}
+                </span>
+              </div>
+
+              {/* Severity breakdown from our own data */}
+              <div style={styles.breakdown}>
+                {SEVERITIES.map((sev) => {
+                  const n = reports.filter((r) => r.severity === sev.value).length;
+                  return (
+                    <div key={sev.value} style={styles.breakRow}>
+                      <span style={{ ...styles.dot, background: sev.color }} />
+                      <span style={{ flex: 1, color: "var(--muted)", fontSize: 13 }}>
+                        {sev.label}
+                      </span>
+                      <span style={{ fontWeight: 700, fontSize: 13 }}>{n}</span>
+                    </div>
+                  );
+                })}
+              </div>
+
+              <a className="btn btn-ghost" href="/ayuda" style={{ marginTop: 14 }}>
+                💚 Ver ayuda y recursos
+              </a>
+            </div>
+          </div>
+        )}
       </section>
 
       <BuildingGrid reports={reports} />
@@ -590,6 +651,56 @@ const styles: Record<string, React.CSSProperties> = {
     padding: 12,
     alignItems: "center",
     justifyContent: "space-between",
+  },
+  overlay: {
+    position: "absolute",
+    inset: 0,
+    background: "rgba(0,0,0,0.6)",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 20,
+    zIndex: 20,
+  },
+  modal: {
+    position: "relative",
+    width: "100%",
+    maxWidth: 340,
+    background: "var(--panel)",
+    borderRadius: 16,
+    padding: 22,
+    maxHeight: "80vh",
+    overflowY: "auto",
+  },
+  modalClose: {
+    position: "absolute",
+    top: 12,
+    right: 14,
+    background: "transparent",
+    border: "none",
+    color: "var(--muted)",
+    fontSize: 18,
+  },
+  statRow: {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    padding: "8px 0",
+    borderBottom: "1px solid rgba(148,163,184,0.12)",
+    fontSize: 15,
+  },
+  breakdown: { marginTop: 14 },
+  breakRow: {
+    display: "flex",
+    alignItems: "center",
+    gap: 8,
+    padding: "5px 0",
+  },
+  dot: {
+    width: 12,
+    height: 12,
+    borderRadius: 999,
+    display: "inline-block",
   },
   counter: {
     background: "rgba(15,23,42,0.9)",

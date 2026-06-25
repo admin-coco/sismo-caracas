@@ -8,7 +8,7 @@ import { SEVERITIES } from "@/lib/severity";
 import { CARACAS, shareApp } from "@/lib/share";
 import { searchAddress, type GeoResult } from "@/lib/geocode";
 
-const OPENFREEMAP_STYLE = "https://tiles.openfreemap.org/styles/liberty";
+const OPENFREEMAP_STYLE = "https://tiles.openfreemap.org/styles/dark";
 
 type GeoState = "idle" | "locating" | "ok" | "denied" | "error";
 
