@@ -259,66 +259,17 @@ export default function MapPage() {
       const rows = await fetchReports();
       setCount(rows.length);
 
+      // No clustering: every building pin stays visible at every zoom level.
       map.addSource(SRC, {
         type: "geojson",
         data: toGeoJSON(rows),
-        cluster: true,
-        clusterRadius: 50,
-        clusterProperties: {
-          // Track the worst severity in each cluster to color it.
-          maxsev: ["max", ["get", "severity"]],
-        },
       });
-
-      // Clustered circles, colored by worst severity in the cluster.
-      map.addLayer({
-        id: "clusters",
-        type: "circle",
-        source: SRC,
-        filter: ["has", "point_count"],
-        paint: {
-          "circle-color": [
-            "step",
-            ["get", "maxsev"],
-            "#22c55e",
-            2,
-            "#eab308",
-            3,
-            "#f97316",
-            4,
-            "#dc2626",
-          ],
-          "circle-radius": [
-            "step",
-            ["get", "point_count"],
-            16,
-            10,
-            22,
-            50,
-            30,
-          ],
-          "circle-stroke-width": 2,
-          "circle-stroke-color": "rgba(255,255,255,0.6)",
-        },
-      });
-      map.addLayer({
-        id: "cluster-count",
-        type: "symbol",
-        source: SRC,
-        filter: ["has", "point_count"],
-        layout: {
-          "text-field": ["get", "point_count_abbreviated"],
-          "text-size": 13,
-        },
-        paint: { "text-color": "#0f172a" },
-      });
-
-      // Unclustered single points.
+      // Every report as its own circle, colored by severity. Radius scales
+      // with zoom so pins are visible when zoomed out and tappable when in.
       map.addLayer({
         id: "points",
         type: "circle",
         source: SRC,
-        filter: ["!", ["has", "point_count"]],
         paint: {
           "circle-color": [
             "step",
@@ -331,9 +282,19 @@ export default function MapPage() {
             4,
             "#dc2626",
           ],
-          "circle-radius": 9,
+          "circle-radius": [
+            "interpolate",
+            ["linear"],
+            ["zoom"],
+            8,
+            5,
+            12,
+            8,
+            16,
+            12,
+          ],
           "circle-stroke-width": 2,
-          "circle-stroke-color": "rgba(255,255,255,0.8)",
+          "circle-stroke-color": "rgba(255,255,255,0.9)",
         },
       });
 
@@ -371,18 +332,6 @@ export default function MapPage() {
           .addTo(map);
       });
 
-      // Zoom into a cluster on tap.
-      map.on("click", "clusters", async (e) => {
-        const f = map.queryRenderedFeatures(e.point, { layers: ["clusters"] })[0];
-        const clusterId = f.properties?.cluster_id;
-        const source = map.getSource(SRC) as maplibregl.GeoJSONSource;
-        const zoom = await source.getClusterExpansionZoom(clusterId);
-        map.easeTo({
-          center: (f.geometry as GeoJSON.Point).coordinates as [number, number],
-          zoom,
-        });
-      });
-
       map.on("mouseenter", "points", () => {
         map.getCanvas().style.cursor = "pointer";
       });
@@ -414,8 +363,6 @@ export default function MapPage() {
     const showHeat = next ? "visible" : "none";
     const showPts = next ? "none" : "visible";
     map.setLayoutProperty("heat", "visibility", showHeat);
-    map.setLayoutProperty("clusters", "visibility", showPts);
-    map.setLayoutProperty("cluster-count", "visibility", showPts);
     map.setLayoutProperty("points", "visibility", showPts);
   }
 
