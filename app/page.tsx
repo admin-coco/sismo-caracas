@@ -209,8 +209,17 @@ function timeAgo(iso: string): string {
 }
 
 // Preview grid of recently reported buildings, shown below the map.
-function BuildingGrid({ reports }: { reports: ReportRow[] }) {
+// Clicking a card opens a detail modal (photos, comments, add more) and a
+// "Ver en el mapa" deep-link. onLocate flies the map to the building's pin.
+function BuildingGrid({
+  reports,
+  onLocate,
+}: {
+  reports: ReportRow[];
+  onLocate: (r: ReportRow) => void;
+}) {
   const recent = reports.slice(0, 24); // newest first (already ordered)
+  const [selected, setSelected] = useState<ReportRow | null>(null);
   return (
     <section style={gridStyles.wrap}>
       <h2 style={gridStyles.heading}>🏚️ Edificios reportados recientemente</h2>
@@ -223,7 +232,11 @@ function BuildingGrid({ reports }: { reports: ReportRow[] }) {
           {recent.map((r) => {
             const info = severityInfo(r.severity);
             return (
-              <a key={r.id} href="/" style={gridStyles.card}>
+              <button
+                key={r.id}
+                onClick={() => setSelected(r)}
+                style={gridStyles.card}
+              >
                 <div style={gridStyles.thumb}>
                   {r.photo_url ? (
                     // eslint-disable-next-line @next/next/no-img-element
@@ -249,7 +262,7 @@ function BuildingGrid({ reports }: { reports: ReportRow[] }) {
                   {r.place && <div style={gridStyles.place}>{r.place}</div>}
                   {r.note && <div style={gridStyles.note}>{r.note}</div>}
                 </div>
-              </a>
+              </button>
             );
           })}
         </div>
@@ -257,9 +270,199 @@ function BuildingGrid({ reports }: { reports: ReportRow[] }) {
       <a className="btn btn-primary" href="/reporte" style={{ marginTop: 16 }}>
         ➕ Reportar un edificio
       </a>
+
+      {selected && (
+        <BuildingModal
+          report={selected}
+          onClose={() => setSelected(null)}
+          onLocate={() => {
+            onLocate(selected);
+            setSelected(null);
+          }}
+        />
+      )}
     </section>
   );
 }
+
+// Detail modal for a building: report info + community photos/comments +
+// an "add" form + "Ver en el mapa".
+function BuildingModal({
+  report,
+  onClose,
+  onLocate,
+}: {
+  report: ReportRow;
+  onClose: () => void;
+  onLocate: () => void;
+}) {
+  const info = severityInfo(report.severity);
+  const [contribs, setContribs] = useState<ContributionRow[]>([]);
+  const [file, setFile] = useState<File | null>(null);
+  const [text, setText] = useState("");
+  const [sending, setSending] = useState(false);
+  const [msg, setMsg] = useState("");
+
+  function load() {
+    fetchContributions(report.id).then(setContribs);
+  }
+  useEffect(load, [report.id]);
+
+  const photos = contribs.filter((c) => c.kind === "photo" && c.photo_url);
+  const comments = contribs.filter((c) => c.kind === "comment" && c.comment);
+
+  async function send() {
+    if (!file && !text.trim()) {
+      setMsg("Añade una foto o un comentario.");
+      return;
+    }
+    setSending(true);
+    setMsg("Enviando…");
+    try {
+      if (file) {
+        const url = await uploadContributionPhoto(file);
+        await addContribution({ reportId: report.id, kind: "photo", photoUrl: url });
+      }
+      if (text.trim()) {
+        await addContribution({ reportId: report.id, kind: "comment", comment: text.trim() });
+      }
+      setFile(null);
+      setText("");
+      setMsg("");
+      load();
+    } catch (e) {
+      console.error(e);
+      setMsg("No se pudo enviar. Intenta de nuevo.");
+    } finally {
+      setSending(false);
+    }
+  }
+
+  return (
+    <div style={modalStyles.overlay} onClick={onClose}>
+      <div style={modalStyles.modal} onClick={(e) => e.stopPropagation()}>
+        <button onClick={onClose} style={modalStyles.close} aria-label="Cerrar">
+          ✕
+        </button>
+
+        <span style={{ ...gridStyles.badge, background: info.color }}>
+          {info.emoji} {info.label}
+        </span>
+        {report.place && <div style={modalStyles.place}>{report.place}</div>}
+        {report.note && <div style={modalStyles.note}>{report.note}</div>}
+        <div style={modalStyles.time}>{timeAgo(report.created_at)}</div>
+
+        {report.photo_url && (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={report.photo_url} alt="" style={modalStyles.mainPhoto} />
+        )}
+
+        {photos.length > 0 && (
+          <div style={modalStyles.photoRow}>
+            {photos.map((p) => (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img key={p.id} src={p.photo_url!} alt="" style={modalStyles.extraPhoto} />
+            ))}
+          </div>
+        )}
+        {comments.map((c) => (
+          <div key={c.id} style={modalStyles.comment}>💬 {c.comment}</div>
+        ))}
+
+        <button className="btn btn-ghost" onClick={onLocate} style={{ marginTop: 14 }}>
+          📍 Ver en el mapa
+        </button>
+
+        {/* Add more photos / comments */}
+        <div style={modalStyles.addBox}>
+          <div style={modalStyles.addTitle}>➕ Añadir más fotos o comentarios</div>
+          <input
+            type="file"
+            accept="image/*"
+            onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+            style={modalStyles.file}
+          />
+          <textarea
+            value={text}
+            maxLength={280}
+            onChange={(e) => setText(e.target.value)}
+            placeholder="Comentario (opcional)…"
+            style={modalStyles.textarea}
+          />
+          <button className="btn btn-primary" onClick={send} disabled={sending}>
+            {sending ? "Enviando…" : "Enviar"}
+          </button>
+          {msg && <div style={modalStyles.msg}>{msg}</div>}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+const modalStyles: Record<string, React.CSSProperties> = {
+  overlay: {
+    position: "fixed",
+    inset: 0,
+    background: "rgba(0,0,0,0.6)",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 16,
+    zIndex: 60,
+  },
+  modal: {
+    position: "relative",
+    width: "100%",
+    maxWidth: 380,
+    maxHeight: "88vh",
+    overflowY: "auto",
+    background: "var(--panel)",
+    borderRadius: 16,
+    padding: 20,
+  },
+  close: {
+    position: "absolute",
+    top: 12,
+    right: 14,
+    background: "transparent",
+    border: "none",
+    color: "var(--muted)",
+    fontSize: 18,
+  },
+  place: { fontWeight: 800, fontSize: 16, margin: "10px 0 4px" },
+  note: { color: "var(--muted)", fontSize: 14 },
+  time: { color: "var(--muted)", fontSize: 12, marginTop: 4 },
+  mainPhoto: { width: "100%", borderRadius: 10, marginTop: 12 },
+  photoRow: { display: "flex", gap: 6, flexWrap: "wrap", marginTop: 8 },
+  extraPhoto: { width: "calc(50% - 3px)", borderRadius: 8 },
+  comment: {
+    background: "rgba(0,0,0,0.05)",
+    borderRadius: 8,
+    padding: "6px 8px",
+    marginTop: 6,
+    fontSize: 14,
+  },
+  addBox: {
+    marginTop: 16,
+    paddingTop: 14,
+    borderTop: "1px solid var(--border)",
+  },
+  addTitle: { fontWeight: 700, fontSize: 14, marginBottom: 8 },
+  file: { width: "100%", fontSize: 13, marginBottom: 8 },
+  textarea: {
+    width: "100%",
+    minHeight: 54,
+    padding: 10,
+    borderRadius: 8,
+    border: "1px solid var(--border)",
+    background: "#fff",
+    color: "var(--text)",
+    fontSize: 14,
+    marginBottom: 8,
+    resize: "vertical",
+  },
+  msg: { fontSize: 12, color: "var(--muted)", marginTop: 6 },
+};
 
 const gridStyles: Record<string, React.CSSProperties> = {
   wrap: { maxWidth: 760, margin: "0 auto", padding: "24px 16px 40px" },
@@ -272,11 +475,17 @@ const gridStyles: Record<string, React.CSSProperties> = {
   },
   card: {
     display: "block",
+    width: "100%",
     background: "var(--panel)",
     borderRadius: 14,
     overflow: "hidden",
     textDecoration: "none",
     color: "var(--text)",
+    border: "1px solid var(--border)",
+    padding: 0,
+    textAlign: "left",
+    cursor: "pointer",
+    font: "inherit",
   },
   thumb: {
     width: "100%",
@@ -509,6 +718,27 @@ export default function MapPage() {
     }
   }
 
+  // Scroll back to the map and fly to a building's pin + open its popup.
+  function flyToReport(r: ReportRow) {
+    window.scrollTo({ top: 0, behavior: "smooth" });
+    const map = mapRef.current;
+    if (!map) return;
+    map.flyTo({ center: [r.lng, r.lat], zoom: 17 });
+    new maplibregl.Popup({ maxWidth: "280px" })
+      .setLngLat([r.lng, r.lat])
+      .setDOMContent(
+        buildPopupNode({
+          id: r.id,
+          severity: String(r.severity),
+          place: r.place ?? "",
+          photo_url: r.photo_url ?? "",
+          note: r.note ?? "",
+          created_at: r.created_at,
+        })
+      )
+      .addTo(map);
+  }
+
   if (mapError) {
     // No WebGL: skip the map but still show the count, actions, and the grid.
     return (
@@ -544,7 +774,7 @@ export default function MapPage() {
             </a>
           </div>
         </section>
-        <BuildingGrid reports={reports} />
+        <BuildingGrid reports={reports} onLocate={flyToReport} />
       </main>
     );
   }
@@ -635,7 +865,7 @@ export default function MapPage() {
         )}
       </section>
 
-      <BuildingGrid reports={reports} />
+      <BuildingGrid reports={reports} onLocate={flyToReport} />
     </main>
   );
 }
