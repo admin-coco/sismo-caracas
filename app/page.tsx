@@ -17,8 +17,6 @@ import {
   fetchContributions,
   addContribution,
   uploadContributionPhoto,
-  hasVoted,
-  recordVote,
   type ContributionRow,
 } from "@/lib/contributions";
 
@@ -115,65 +113,15 @@ function buildPopupNode(p: Record<string, string>): HTMLElement {
       <a href="${xUrl}" target="_blank" rel="noopener noreferrer" style="flex:1;text-align:center;padding:8px;border-radius:8px;background:#000;color:#fff;font-weight:700;text-decoration:none;font-size:13px">𝕏 Compartir</a>
       <a href="${waUrl}" target="_blank" rel="noopener noreferrer" style="flex:1;text-align:center;padding:8px;border-radius:8px;background:#25d366;color:#04341c;font-weight:700;text-decoration:none;font-size:13px">WhatsApp</a>
     </div>
-    <div data-votes style="display:flex;gap:8px;margin-top:8px"></div>
     <div data-contrib style="margin-top:8px"></div>
     <button data-addbtn style="width:100%;margin-top:8px;padding:8px;border:none;border-radius:8px;background:#1e293b;color:#fff;font-weight:600;cursor:pointer">➕ Añadir foto o comentario</button>
     <div data-form style="display:none;margin-top:8px"></div>
-    <a href="/reporte?building=${esc(reportId)}" style="display:block;text-align:center;margin-top:8px;padding:8px;border-radius:8px;background:#7c3aed;color:#fff;font-weight:700;text-decoration:none;font-size:13px">🧍 Reportar persona desaparecida aquí</a>
+    <a href="/reporte?building=${esc(reportId)}" style="display:block;text-align:center;margin-top:8px;padding:8px;border-radius:8px;background:#7c3aed;color:#fff;font-weight:700;text-decoration:none;font-size:13px">🧍 Persona desaparecida</a>
   `;
 
-  const votesEl = root.querySelector("[data-votes]") as HTMLElement;
   const contribEl = root.querySelector("[data-contrib]") as HTMLElement;
   const addBtn = root.querySelector("[data-addbtn]") as HTMLButtonElement;
   const formEl = root.querySelector("[data-form]") as HTMLElement;
-
-  // --- render the vote row (with live tallies) ---
-  function renderVotes(rows: ContributionRow[]) {
-    const real = rows.filter((r) => r.kind === "vote_real").length;
-    const fake = rows.filter((r) => r.kind === "vote_fake").length;
-    const voted = hasVoted(reportId);
-    const pill = (bg: string) =>
-      `flex:1;padding:8px;border:none;border-radius:8px;background:${bg};color:#fff;font-weight:700;cursor:${voted ? "default" : "pointer"};opacity:${voted ? 0.7 : 1}`;
-    votesEl.innerHTML = `
-      <button data-real style="${pill("#16a34a")}" ${voted ? "disabled" : ""}>👍 Real · ${real}</button>
-      <button data-fake style="${pill("#dc2626")}" ${voted ? "disabled" : ""}>👎 Falso · ${fake}</button>
-    `;
-    if (!voted) {
-      const realBtn = votesEl.querySelector("[data-real]") as HTMLButtonElement;
-      const fakeBtn = votesEl.querySelector("[data-fake]") as HTMLButtonElement;
-      const vote = async (
-        kind: "vote_real" | "vote_fake",
-        btn: HTMLButtonElement
-      ) => {
-        const original = btn.textContent;
-        realBtn.disabled = true;
-        fakeBtn.disabled = true;
-        btn.textContent = "Enviando…";
-        try {
-          await addContribution({ reportId, kind });
-          // Only remember the vote once it actually persisted.
-          recordVote(reportId, kind);
-          load();
-        } catch (e) {
-          console.error(e);
-          // Roll back: re-enable so the user can retry, show a hint.
-          realBtn.disabled = false;
-          fakeBtn.disabled = false;
-          btn.textContent = original;
-          votesEl.insertAdjacentHTML(
-            "afterend",
-            `<div data-voteerr style="font-size:12px;color:#b91c1c;margin-top:4px">No se pudo registrar el voto. Intenta de nuevo.</div>`
-          );
-          setTimeout(
-            () => root.querySelector("[data-voteerr]")?.remove(),
-            3000
-          );
-        }
-      };
-      realBtn.onclick = () => vote("vote_real", realBtn);
-      fakeBtn.onclick = () => vote("vote_fake", fakeBtn);
-    }
-  }
 
   // --- render public photos & comments ---
   function renderContribs(rows: ContributionRow[]) {
@@ -193,7 +141,6 @@ function buildPopupNode(p: Record<string, string>): HTMLElement {
 
   async function load() {
     const rows = await fetchContributions(reportId);
-    renderVotes(rows);
     renderContribs(rows);
   }
 

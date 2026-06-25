@@ -46,6 +46,8 @@ export default function ReportPage() {
   const [cedula, setCedula] = useState("");
   const [phone, setPhone] = useState("");
   const [linkedBuilding, setLinkedBuilding] = useState<string | null>(null);
+  // Optional building photo on the persona form → creates a linked building.
+  const [buildingFile, setBuildingFile] = useState<File | null>(null);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -192,6 +194,27 @@ export default function ReportPage() {
       setError(null);
       try {
         const photo_url = file ? await uploadPhoto(file) : undefined;
+
+        // If a building photo was added (and we're not already linked to an
+        // existing building), create a building report too and link to it.
+        // We generate the id client-side so we can link without reading back.
+        let reportId = linkedBuilding ?? undefined;
+        if (!reportId && buildingFile) {
+          const buildingPhoto = await uploadPhoto(buildingFile);
+          const newId = crypto.randomUUID();
+          const { error: bErr } = await supabase.from("reports").insert({
+            id: newId,
+            lat: coords.lat,
+            lng: coords.lng,
+            severity: severity ?? 3, // default to "severo" if not chosen
+            place: place.trim() ? place.trim().slice(0, 200) : null,
+            note: note.trim() ? note.trim().slice(0, 280) : null,
+            photo_url: buildingPhoto,
+          });
+          if (bErr) throw bErr;
+          reportId = newId;
+        }
+
         await addPerson({
           lat: coords.lat,
           lng: coords.lng,
@@ -201,7 +224,7 @@ export default function ReportPage() {
           phone: phone.trim() ? phone.trim().slice(0, 30) : undefined,
           note: note.trim() ? note.trim().slice(0, 280) : undefined,
           photo_url,
-          report_id: linkedBuilding ?? undefined,
+          report_id: reportId,
         });
         if (notify) subscribeToPush().catch(() => {});
         setDone(true);
@@ -483,10 +506,50 @@ export default function ReportPage() {
                 style={styles.file}
               />
               {file && <p style={styles.hint}>✓ {file.name}</p>}
+
+              {!linkedBuilding && (
+                <>
+                  <label style={styles.label}>
+                    4. Foto del edificio (opcional)
+                  </label>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => setBuildingFile(e.target.files?.[0] ?? null)}
+                    style={styles.file}
+                  />
+                  {buildingFile && (
+                    <>
+                      <p style={styles.hint}>✓ {buildingFile.name}</p>
+                      <select
+                        value={severity ?? ""}
+                        onChange={(e) =>
+                          setSeverity(
+                            e.target.value
+                              ? (Number(e.target.value) as Severity)
+                              : null
+                          )
+                        }
+                        style={{ ...styles.input, marginTop: 8 }}
+                      >
+                        <option value="">Nivel de daño del edificio…</option>
+                        {SEVERITIES.map((s) => (
+                          <option key={s.value} value={s.value}>
+                            {s.emoji} {s.label}
+                          </option>
+                        ))}
+                      </select>
+                      <p style={styles.hint}>
+                        Se creará también un reporte del edificio en el mapa.
+                      </p>
+                    </>
+                  )}
+                </>
+              )}
             </>
           )}
 
-          <label style={styles.label}>4. Nota (opcional)</label>
+          <label style={styles.label}>Nota (opcional)</label>
           <textarea
             value={note}
             maxLength={280}
