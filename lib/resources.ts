@@ -25,34 +25,41 @@ export const COCO_RESOURCES: Resource[] = [
   },
 ];
 
-// Other community emergency / missing-persons resources.
+// Service / marketplace partners that can help affected people.
 export const EXTERNAL_RESOURCES: Resource[] = [
   {
-    badge: "Mapa de Emergencia y Rescate",
-    badgeColor: "#1d4ed8",
-    name: "terremotovenezuela.app",
-    description: "Reportes, desaparecidos y mapa de emergencia en una sola app.",
-    url: "https://terremotovenezuela.app",
+    badge: "Mercado",
+    badgeColor: "#f59e0b",
+    name: "Yummy Marketplace",
+    description: "Pide comida, mercado y productos a domicilio.",
+    url: "https://yummysuperapp.com",
   },
   {
-    badge: "Personas desaparecidas",
-    badgeColor: "#eab308",
-    name: "venezuelatebusca.com",
-    description: "Reporta y busca familiares o amigos desaparecidos tras el terremoto.",
-    url: "https://venezuelatebusca.com",
+    badge: "Transporte",
+    badgeColor: "#16a34a",
+    name: "Yummy Rides",
+    description: "Pide un viaje para movilizarte o ayudar a evacuar.",
+    url: "https://yummysuperapp.com",
   },
   {
-    badge: "Reportes de desaparecidos",
+    badge: "Transporte",
+    badgeColor: "#7c3aed",
+    name: "Ridery",
+    description: "Pide un taxi seguro para movilizarte o ayudar a evacuar.",
+    url: "https://ridery.app",
+  },
+  {
+    badge: "Pagos",
+    badgeColor: "#0ea5e9",
+    name: "Tilín",
+    description: "Envía y recibe dinero de forma rápida.",
+    url: "https://tilin.com",
+  },
+  {
+    badge: "Compra ahora, paga después",
     badgeColor: "#dc2626",
-    name: "venezuelareporta.org",
-    description: "Registro y consulta de personas desaparecidas en Venezuela.",
-    url: "https://venezuelareporta.org",
-  },
-  {
-    badge: "Personas desaparecidas",
-    badgeColor: "#1d4ed8",
-    name: "desaparecidosterremotovenezuela.com",
-    description: "Directorio dedicado a desaparecidos tras el terremoto en Venezuela.",
-    url: "https://desaparecidosterremotovenezuela.com",
+    name: "Cashea",
+    description: "Compra lo que necesitas y paga en cuotas.",
+    url: "https://cashea.app",
   },
 ];

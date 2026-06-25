@@ -33,7 +33,7 @@ export default function AyudaPage() {
         <Card key={r.url} r={r} />
       ))}
 
-      <h2 style={styles.section}>Otros recursos de emergencia</h2>
+      <h2 style={styles.section}>Ayuda</h2>
       {EXTERNAL_RESOURCES.map((r) => (
         <Card key={r.url} r={r} />
       ))}
