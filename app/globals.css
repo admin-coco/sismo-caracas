@@ -63,3 +63,10 @@ a {
   background: var(--panel);
   color: var(--text);
 }
+
+/* Keep MapLibre's bottom-right attribution clear of the floating action bar:
+   lift it above the buttons' reserved strip and keep it tucked in the corner. */
+.maplibregl-ctrl-bottom-right {
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 78px);
+  z-index: 1;
+}

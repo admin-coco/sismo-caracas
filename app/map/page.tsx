@@ -63,6 +63,9 @@ export default function MapPage() {
       style: OPENFREEMAP_STYLE,
       center: [CARACAS.lng, CARACAS.lat],
       zoom: CARACAS.zoom,
+      // Compact attribution collapses to a small ⓘ; the action buttons float
+      // above it (see bottomBar style) so nothing is covered.
+      attributionControl: { compact: true },
     });
     mapRef.current = map;
 
@@ -309,11 +312,14 @@ const styles: Record<string, React.CSSProperties> = {
   },
   bottomBar: {
     position: "absolute",
-    bottom: 0,
+    // Sit above MapLibre's attribution strip (~22px) plus the iOS home-bar
+    // safe area, so the buttons are never covered.
+    bottom: "calc(env(safe-area-inset-bottom, 0px) + 22px)",
     left: 0,
     right: 0,
     display: "flex",
     gap: 10,
     padding: 12,
+    zIndex: 5,
   },
 };
