@@ -14,8 +14,10 @@ function Card({ r }: { r: Resource }) {
     >
       <div style={styles.name}>{r.name}</div>
       <div style={styles.desc}>{r.description}</div>
-      <div style={styles.visit}>Visitar sitio →</div>
-      <span style={{ ...styles.badge, background: r.badgeColor }}>{r.badge}</span>
+      <div style={styles.bottomRow}>
+        <span style={styles.visit}>Visitar sitio →</span>
+        <span style={{ ...styles.badge, background: r.badgeColor }}>{r.badge}</span>
+      </div>
     </a>
   );
 }
@@ -93,18 +95,25 @@ const styles: Record<string, React.CSSProperties> = {
     color: "var(--text)",
     height: "100%",
   },
+  bottomRow: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 10,
+    marginTop: "auto", // push the whole row to the bottom of the card
+    paddingTop: 14,
+  },
   badge: {
-    alignSelf: "flex-start", // bottom-left
+    flexShrink: 0,
     padding: "5px 12px",
     borderRadius: 999,
     fontSize: 13,
     fontWeight: 700,
     color: "#fff",
-    marginTop: "auto", // push to the bottom of the card
   },
   name: { fontSize: 20, fontWeight: 800, margin: "0 0 6px" },
   desc: { color: "var(--muted)", fontSize: 15, lineHeight: 1.4 },
-  visit: { color: "#60a5fa", fontWeight: 700, margin: "12px 0 14px" },
+  visit: { color: "#60a5fa", fontWeight: 700 },
   disclaimer: {
     color: "var(--muted)",
     fontSize: 12,
