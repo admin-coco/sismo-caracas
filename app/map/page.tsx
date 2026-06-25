@@ -86,19 +86,39 @@ function buildPopupNode(p: Record<string, string>): HTMLElement {
       <button data-fake style="${pill("#dc2626")}" ${voted ? "disabled" : ""}>👎 Falso · ${fake}</button>
     `;
     if (!voted) {
-      const vote = async (kind: "vote_real" | "vote_fake") => {
-        recordVote(reportId, kind);
+      const realBtn = votesEl.querySelector("[data-real]") as HTMLButtonElement;
+      const fakeBtn = votesEl.querySelector("[data-fake]") as HTMLButtonElement;
+      const vote = async (
+        kind: "vote_real" | "vote_fake",
+        btn: HTMLButtonElement
+      ) => {
+        const original = btn.textContent;
+        realBtn.disabled = true;
+        fakeBtn.disabled = true;
+        btn.textContent = "Enviando…";
         try {
           await addContribution({ reportId, kind });
+          // Only remember the vote once it actually persisted.
+          recordVote(reportId, kind);
+          load();
         } catch (e) {
           console.error(e);
+          // Roll back: re-enable so the user can retry, show a hint.
+          realBtn.disabled = false;
+          fakeBtn.disabled = false;
+          btn.textContent = original;
+          votesEl.insertAdjacentHTML(
+            "afterend",
+            `<div data-voteerr style="font-size:12px;color:#b91c1c;margin-top:4px">No se pudo registrar el voto. Intenta de nuevo.</div>`
+          );
+          setTimeout(
+            () => root.querySelector("[data-voteerr]")?.remove(),
+            3000
+          );
         }
-        load();
       };
-      (votesEl.querySelector("[data-real]") as HTMLButtonElement).onclick = () =>
-        vote("vote_real");
-      (votesEl.querySelector("[data-fake]") as HTMLButtonElement).onclick = () =>
-        vote("vote_fake");
+      realBtn.onclick = () => vote("vote_real", realBtn);
+      fakeBtn.onclick = () => vote("vote_fake", fakeBtn);
     }
   }
 
