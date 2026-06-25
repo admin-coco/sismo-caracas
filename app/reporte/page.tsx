@@ -28,6 +28,8 @@ export default function ReportPage() {
   const [file, setFile] = useState<File | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [done, setDone] = useState(false);
+  // Honeypot: humans never see/fill this; bots auto-fill it. If set, we bail.
+  const [hp, setHp] = useState("");
   const [error, setError] = useState<string | null>(null);
 
   // Initialize the draggable-pin map once.
@@ -119,6 +121,12 @@ export default function ReportPage() {
 
   async function submit() {
     if (severity == null) return;
+    // Honeypot tripped → almost certainly a bot. Pretend it worked (so it
+    // won't retry) but write nothing.
+    if (hp.trim() !== "") {
+      setDone(true);
+      return;
+    }
     setSubmitting(true);
     setError(null);
     try {
@@ -202,6 +210,23 @@ export default function ReportPage() {
 
   return (
     <main style={styles.page}>
+      {/* Honeypot: off-screen, hidden from humans & screen readers; only bots fill it. */}
+      <input
+        type="text"
+        name="website"
+        tabIndex={-1}
+        autoComplete="off"
+        aria-hidden="true"
+        value={hp}
+        onChange={(e) => setHp(e.target.value)}
+        style={{
+          position: "absolute",
+          left: "-9999px",
+          width: 1,
+          height: 1,
+          opacity: 0,
+        }}
+      />
       <header style={styles.header}>
         <h1 style={styles.title}>🏚️ Reportar edificio dañado</h1>
         <p style={styles.sub}>Terremoto Caracas · mapa colaborativo</p>
