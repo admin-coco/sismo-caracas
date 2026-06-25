@@ -478,7 +478,7 @@ const styles: Record<string, React.CSSProperties> = {
     border: "none",
     color: "var(--text)",
     fontSize: 15,
-    colorScheme: "dark", // makes native <select> dropdown render dark + readable
+    colorScheme: "light", // native <select> dropdown matches the light theme
   },
   searchWrap: { position: "relative" },
   results: {

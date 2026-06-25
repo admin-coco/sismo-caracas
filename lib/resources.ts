@@ -23,13 +23,6 @@ export const COCO_RESOURCES: Resource[] = [
     description: "Envía dinero de forma rápida a quienes lo necesitan.",
     url: "https://cocowallet.app",
   },
-  {
-    badge: "Transporte",
-    badgeColor: "#7c3aed",
-    name: "Ridery",
-    description: "Pide un taxi seguro para movilizarte o ayudar a evacuar.",
-    url: "https://ridery.app",
-  },
 ];
 
 // Other community emergency / missing-persons resources.

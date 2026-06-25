@@ -2,10 +2,11 @@
 
 :root {
   --rojo: #dc2626;
-  --bg: #0f172a;
-  --panel: #1e293b;
-  --text: #f8fafc;
-  --muted: #94a3b8;
+  --bg: #faf6ec; /* light cream */
+  --panel: #ffffff; /* cards on cream */
+  --text: #1f2937; /* dark slate, readable on cream */
+  --muted: #6b7280; /* medium gray */
+  --border: #e7e1d3; /* subtle warm border */
 }
 
 * {
@@ -62,6 +63,7 @@ a {
 .btn-ghost {
   background: var(--panel);
   color: var(--text);
+  border: 1px solid var(--border);
 }
 
 /* Keep MapLibre's bottom-right attribution clear of the floating action bar:

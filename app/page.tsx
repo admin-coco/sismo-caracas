@@ -281,7 +281,7 @@ const gridStyles: Record<string, React.CSSProperties> = {
   thumb: {
     width: "100%",
     aspectRatio: "4 / 3",
-    background: "#0b1220",
+    background: "#ede7d8",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
@@ -703,16 +703,18 @@ const styles: Record<string, React.CSSProperties> = {
     display: "inline-block",
   },
   counter: {
-    background: "rgba(15,23,42,0.9)",
-    color: "#f8fafc",
+    // Light cream pill so it stands out against the dark map.
+    background: "rgba(250,246,236,0.95)",
+    color: "#1f2937",
     padding: "10px 14px",
     borderRadius: 999,
     fontWeight: 700,
     fontSize: 14,
+    boxShadow: "0 1px 4px rgba(0,0,0,0.35)",
   },
   toggle: {
-    background: "rgba(15,23,42,0.9)",
-    color: "#f8fafc",
+    background: "rgba(250,246,236,0.95)",
+    color: "#1f2937",
     border: "none",
     padding: "10px 14px",
     borderRadius: 999,
@@ -721,6 +723,7 @@ const styles: Record<string, React.CSSProperties> = {
     textDecoration: "none",
     display: "inline-block",
     whiteSpace: "nowrap",
+    boxShadow: "0 1px 4px rgba(0,0,0,0.35)",
   },
   bottomBar: {
     position: "absolute",
