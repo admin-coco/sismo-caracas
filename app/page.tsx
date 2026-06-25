@@ -75,8 +75,15 @@ function toGeoJSON(rows: ReportRow[]) {
   };
 }
 
+// Escapes for both HTML text and double/single-quoted attribute contexts
+// (popup markup interpolates user content into src="…" as well as text).
 const esc = (s: string) =>
-  s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  s
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
 
 // Builds the interactive popup DOM node: report details + live community
 // votes + extra photos/comments + an inline "add" form. Everything is public.
@@ -734,17 +741,18 @@ export default function MapPage() {
         const f = e.features?.[0];
         if (!f) return;
         const p = f.properties as Record<string, string>;
+        // User-submitted fields (anon insert) — escape before injecting as HTML.
         const needs = p.needs
-          ? `<div style="margin-top:6px">${p.needs}</div>`
+          ? `<div style="margin-top:6px">${esc(p.needs)}</div>`
           : "";
         const contact = p.contact
-          ? `<div style="margin-top:6px;color:#15803d;font-weight:600">📞 ${p.contact}</div>`
+          ? `<div style="margin-top:6px;color:#15803d;font-weight:600">📞 ${esc(p.contact)}</div>`
           : "";
         new maplibregl.Popup({ maxWidth: "260px" })
           .setLngLat((f.geometry as GeoJSON.Point).coordinates as [number, number])
           .setHTML(
             `<div style="font-family:system-ui;color:#0f172a">
-               <strong style="color:#15803d">📦 ${p.name}</strong>
+               <strong style="color:#15803d">📦 ${esc(p.name)}</strong>
                ${needs}${contact}
              </div>`
           )
@@ -783,22 +791,23 @@ export default function MapPage() {
         const f = e.features?.[0];
         if (!f) return;
         const p = f.properties as Record<string, string>;
+        // User-submitted fields (anon insert) — escape before injecting as HTML.
         const img = p.photo_url
-          ? `<img src="${p.photo_url}" style="width:100%;border-radius:8px;margin-top:6px"/>`
+          ? `<img src="${esc(p.photo_url)}" style="width:100%;border-radius:8px;margin-top:6px"/>`
           : "";
         const cedula = p.cedula
-          ? `<div style="margin-top:4px">C.I.: ${p.cedula}</div>`
+          ? `<div style="margin-top:4px">C.I.: ${esc(p.cedula)}</div>`
           : "";
         const phone = p.phone
-          ? `<div style="margin-top:4px;color:#7c3aed;font-weight:600">📞 ${p.phone}</div>`
+          ? `<div style="margin-top:4px;color:#7c3aed;font-weight:600">📞 ${esc(p.phone)}</div>`
           : "";
-        const note = p.note ? `<div style="margin-top:6px">${p.note}</div>` : "";
+        const note = p.note ? `<div style="margin-top:6px">${esc(p.note)}</div>` : "";
         new maplibregl.Popup({ maxWidth: "260px" })
           .setLngLat((f.geometry as GeoJSON.Point).coordinates as [number, number])
           .setHTML(
             `<div style="font-family:system-ui;color:#0f172a">
                <strong style="color:#7c3aed">🧍 Desaparecido${p.found ? " · ENCONTRADO ✅" : ""}</strong>
-               <div style="font-weight:700;margin-top:4px">${p.name}</div>
+               <div style="font-weight:700;margin-top:4px">${esc(p.name)}</div>
                ${cedula}${phone}${note}${img}
              </div>`
           )
