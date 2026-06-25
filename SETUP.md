@@ -15,6 +15,7 @@ create table public.reports (
   lat         double precision not null,
   lng         double precision not null,
   severity    smallint not null check (severity between 1 and 4),
+  place       text,                             -- building/house name + address (optional)
   photo_url   text,
   note        text,
   approved    boolean not null default true,   -- flip default to false later to moderate
@@ -36,6 +37,11 @@ create policy "anon read approved" on public.reports
 -- No UPDATE / DELETE policy on purpose => denied for anon.
 -- You moderate from the dashboard (service role bypasses RLS).
 ```
+
+> **Already created the table from an earlier version?** Just add the new column:
+> ```sql
+> alter table public.reports add column if not exists place text;
+> ```
 
 ## 2. Storage bucket for photos
 

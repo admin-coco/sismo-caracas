@@ -29,6 +29,7 @@ export interface ReportRow {
   lat: number;
   lng: number;
   severity: Severity;
+  place: string | null;
   photo_url: string | null;
   note: string | null;
   created_at: string;

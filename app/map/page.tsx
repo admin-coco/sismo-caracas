@@ -17,6 +17,7 @@ function toGeoJSON(rows: ReportRow[]) {
       geometry: { type: "Point" as const, coordinates: [r.lng, r.lat] },
       properties: {
         severity: r.severity,
+        place: r.place ?? "",
         photo_url: r.photo_url ?? "",
         note: r.note ?? "",
         created_at: r.created_at,
@@ -35,7 +36,7 @@ export default function MapPage() {
   async function fetchReports(): Promise<ReportRow[]> {
     const { data, error } = await supabase
       .from("reports")
-      .select("id,lat,lng,severity,photo_url,note,created_at")
+      .select("id,lat,lng,severity,place,photo_url,note,created_at")
       .order("created_at", { ascending: false })
       .limit(5000);
     if (error) {
@@ -180,6 +181,9 @@ export default function MapPage() {
         const img = p.photo_url
           ? `<img src="${p.photo_url}" style="width:100%;border-radius:8px;margin-top:6px"/>`
           : "";
+        const place = p.place
+          ? `<div style="font-weight:600;margin-top:4px">${p.place}</div>`
+          : "";
         const note = p.note
           ? `<div style="margin-top:6px">${p.note}</div>`
           : "";
@@ -188,7 +192,7 @@ export default function MapPage() {
           .setHTML(
             `<div style="font-family:system-ui;color:#0f172a">
                <strong style="color:${info.color}">${info.emoji} ${info.label}</strong>
-               ${note}${img}
+               ${place}${note}${img}
                <div style="color:#64748b;font-size:11px;margin-top:6px">${when}</div>
              </div>`
           )

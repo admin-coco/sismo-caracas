@@ -6,6 +6,7 @@ import imageCompression from "browser-image-compression";
 import { supabase, PHOTOS_BUCKET, type Severity } from "@/lib/supabase";
 import { SEVERITIES } from "@/lib/severity";
 import { CARACAS, whatsappShareUrl } from "@/lib/share";
+import { searchAddress, type GeoResult } from "@/lib/geocode";
 
 const OPENFREEMAP_STYLE = "https://tiles.openfreemap.org/styles/liberty";
 
@@ -18,6 +19,10 @@ export default function ReportPage() {
 
   const [coords, setCoords] = useState({ lat: CARACAS.lat, lng: CARACAS.lng });
   const [geo, setGeo] = useState<GeoState>("idle");
+  const [place, setPlace] = useState(""); // building/house name + address text
+  const [query, setQuery] = useState("");
+  const [results, setResults] = useState<GeoResult[]>([]);
+  const [searching, setSearching] = useState(false);
   const [severity, setSeverity] = useState<Severity | null>(null);
   const [note, setNote] = useState("");
   const [file, setFile] = useState<File | null>(null);
@@ -52,6 +57,17 @@ export default function ReportPage() {
     };
   }, []);
 
+  // Shared by geolocation and address pick: move pin + recenter map + record coords.
+  function moveTo(lat: number, lng: number, zoom = 16) {
+    setCoords({ lat, lng });
+    const map = mapRef.current;
+    const marker = markerRef.current;
+    if (map && marker) {
+      marker.setLngLat([lng, lat]);
+      map.flyTo({ center: [lng, lat], zoom });
+    }
+  }
+
   function useMyLocation() {
     if (!navigator.geolocation) {
       setGeo("error");
@@ -60,15 +76,8 @@ export default function ReportPage() {
     setGeo("locating");
     navigator.geolocation.getCurrentPosition(
       (pos) => {
-        const { latitude, longitude } = pos.coords;
-        setCoords({ lat: latitude, lng: longitude });
+        moveTo(pos.coords.latitude, pos.coords.longitude);
         setGeo("ok");
-        const map = mapRef.current;
-        const marker = markerRef.current;
-        if (map && marker) {
-          marker.setLngLat([longitude, latitude]);
-          map.flyTo({ center: [longitude, latitude], zoom: 16 });
-        }
       },
       (err) => {
         // 1 = denied, 2 = unavailable, 3 = timeout
@@ -76,6 +85,36 @@ export default function ReportPage() {
       },
       { enableHighAccuracy: true, timeout: 8000, maximumAge: 0 }
     );
+  }
+
+  // Debounced address autocomplete (Nominatim asks for <=1 req/s).
+  useEffect(() => {
+    const q = query.trim();
+    if (q.length < 3) {
+      setResults([]);
+      return;
+    }
+    const controller = new AbortController();
+    setSearching(true);
+    const timer = setTimeout(() => {
+      searchAddress(q, controller.signal)
+        .then(setResults)
+        .catch(() => setResults([]))
+        .finally(() => setSearching(false));
+    }, 600);
+    return () => {
+      clearTimeout(timer);
+      controller.abort();
+      setSearching(false);
+    };
+  }, [query]);
+
+  function pickResult(r: GeoResult) {
+    moveTo(r.lat, r.lng, 17);
+    // Prefill the building/address name with the first part of the result.
+    if (!place.trim()) setPlace(r.label.split(",").slice(0, 2).join(",").trim());
+    setQuery("");
+    setResults([]);
   }
 
   async function submit() {
@@ -107,6 +146,7 @@ export default function ReportPage() {
         lat: coords.lat,
         lng: coords.lng,
         severity,
+        place: place.trim() ? place.trim().slice(0, 200) : null,
         note: note.trim() ? note.trim().slice(0, 280) : null,
         photo_url,
       });
@@ -150,6 +190,7 @@ export default function ReportPage() {
               setSeverity(null);
               setNote("");
               setFile(null);
+              setPlace("");
             }}
           >
             Reportar otro edificio
@@ -168,7 +209,53 @@ export default function ReportPage() {
 
       <section>
         <label style={styles.label}>1. Ubicación del edificio</label>
-        <button className="btn btn-ghost" onClick={useMyLocation}>
+
+        <input
+          type="text"
+          value={place}
+          maxLength={200}
+          onChange={(e) => setPlace(e.target.value)}
+          placeholder="Nombre del edificio / casa (ej: Res. El Ávila)"
+          style={styles.input}
+        />
+
+        <div style={styles.searchWrap}>
+          <input
+            type="text"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="🔎 Buscar dirección (calle, urbanización…)"
+            style={styles.input}
+            autoComplete="off"
+          />
+          {(results.length > 0 || searching) && (
+            <ul style={styles.results}>
+              {searching && results.length === 0 && (
+                <li style={styles.resultEmpty}>Buscando…</li>
+              )}
+              {results.map((r, i) => (
+                <li
+                  key={`${r.lat},${r.lng},${i}`}
+                  style={styles.resultItem}
+                  onClick={() => pickResult(r)}
+                >
+                  📍 {r.label}
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+
+        <p style={styles.hint}>
+          Si prefieres no compartir tu ubicación, busca la dirección arriba o
+          arrastra el pin rojo en el mapa.
+        </p>
+
+        <button
+          className="btn btn-ghost"
+          onClick={useMyLocation}
+          style={{ marginTop: 4 }}
+        >
           {geo === "locating" ? "Localizando…" : "📍 Usar mi ubicación"}
         </button>
         {geo === "denied" && (
@@ -261,6 +348,38 @@ const styles: Record<string, React.CSSProperties> = {
   sub: { color: "var(--muted)", margin: 0, fontSize: 14 },
   label: { display: "block", fontWeight: 700, margin: "20px 0 8px" },
   hint: { color: "var(--muted)", fontSize: 13, margin: "8px 0 0" },
+  input: {
+    width: "100%",
+    padding: 14,
+    marginBottom: 10,
+    background: "var(--panel)",
+    borderRadius: 12,
+    border: "none",
+    color: "var(--text)",
+    fontSize: 15,
+  },
+  searchWrap: { position: "relative" },
+  results: {
+    listStyle: "none",
+    margin: "-6px 0 0",
+    padding: 4,
+    background: "var(--panel)",
+    borderRadius: 12,
+    maxHeight: 220,
+    overflowY: "auto",
+  },
+  resultItem: {
+    padding: "12px 10px",
+    borderRadius: 8,
+    fontSize: 14,
+    cursor: "pointer",
+    borderBottom: "1px solid rgba(148,163,184,0.15)",
+  },
+  resultEmpty: {
+    padding: "12px 10px",
+    fontSize: 14,
+    color: "var(--muted)",
+  },
   map: {
     height: 240,
     borderRadius: 12,
