@@ -99,6 +99,40 @@ create policy "anon read approved" on public.acopios
   for select to anon using (approved = true);
 ```
 
+### 1d. Push notifications (subscriptions table + webhook)
+
+Run this SQL:
+
+```sql
+create table public.push_subscriptions (
+  endpoint   text primary key,
+  p256dh     text not null,
+  auth       text not null,
+  created_at timestamptz not null default now()
+);
+alter table public.push_subscriptions enable row level security;
+
+-- Anyone may subscribe (upsert their own device's subscription).
+create policy "anon upsert" on public.push_subscriptions
+  for insert to anon with check (true);
+create policy "anon update" on public.push_subscriptions
+  for update to anon using (true) with check (true);
+-- No SELECT/DELETE for anon: only the server (service role) reads/cleans them.
+```
+
+Then:
+1. **Project Settings → API → service_role key** → add it to Vercel as
+   `SUPABASE_SERVICE_ROLE_KEY` (production). Keep it secret — never `NEXT_PUBLIC_`.
+2. **Database → Webhooks → Create a new hook**:
+   - Table: `reports`, Events: **Insert**
+   - Type: **HTTP Request**, Method: **POST**
+   - URL: `https://sismovenezuela.org/api/notify`
+   - HTTP header: `x-webhook-secret: <PUSH_WEBHOOK_SECRET value>`
+3. VAPID keys are already set in Vercel (`NEXT_PUBLIC_VAPID_PUBLIC_KEY`,
+   `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT`).
+
+> iOS note: web push only works if the user adds the site to their Home Screen.
+
 ## 2. Storage bucket for photos
 
 1. **Storage** → New bucket → name it exactly **`photos`** → toggle **Public bucket** ON → create.
