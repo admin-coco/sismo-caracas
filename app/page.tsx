@@ -619,6 +619,21 @@ export default function MapPage() {
         // Compact attribution collapses to a small ⓘ; the action buttons float
         // above it (see bottomBar style) so nothing is covered.
         attributionControl: { compact: true },
+        // Without this, scrolling the page on mobile drags the map and pinches
+        // zoom in/out — users get stuck "in" the map. Cooperative gestures
+        // require two fingers to pan (mobile) or Ctrl/⌘+scroll to zoom
+        // (desktop), so a single-finger scroll on the map scrolls the page.
+        cooperativeGestures: true,
+        // Override the default English overlay text shown when the user tries
+        // a single-finger drag / plain scroll on the map.
+        locale: {
+          "CooperativeGesturesHandler.WindowsHelpText":
+            "Usa Ctrl + scroll para hacer zoom en el mapa",
+          "CooperativeGesturesHandler.MacHelpText":
+            "Usa ⌘ + scroll para hacer zoom en el mapa",
+          "CooperativeGesturesHandler.MobileHelpText":
+            "Usa dos dedos para mover el mapa",
+        },
       });
     } catch (e) {
       console.error("Map init failed:", e);
@@ -944,7 +959,9 @@ export default function MapPage() {
   return (
     <main>
       {/* Full-screen map hero. Overlays are positioned relative to this. */}
-      <section style={{ position: "relative", height: "100dvh" }}>
+      {/* 70dvh, not 100dvh, so the "Edificios reportados" grid peeks below
+          the map — gives users an obvious place to scroll to. */}
+      <section style={{ position: "relative", height: "70dvh" }}>
         <div ref={containerRef} style={{ position: "absolute", inset: 0 }} />
 
         <div style={styles.topBar}>
