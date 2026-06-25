@@ -965,7 +965,7 @@ export default function MapPage() {
               target="_blank"
               rel="noopener noreferrer"
             >
-              🧍 Busca Persona
+              🧍 Busca Personas
             </a>
             <a style={styles.toggle} href="/ayuda">
               💚 Ayuda
