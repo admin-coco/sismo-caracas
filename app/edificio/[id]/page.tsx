@@ -47,9 +47,11 @@ export async function generateMetadata({
   const title = `${where}${sev ? ` · ${sev}` : ""} — Terremoto Venezuela`;
   const description =
     "Edificio reportado en el mapa colaborativo de daños del terremoto en Venezuela.";
-  // Use the building's own photo if it has one; else fall back to the card.
-  const image = b?.photo_url || `${SITE}/og.jpg?v=2`;
 
+  // NOTE: we intentionally do NOT set `images` here — the sibling
+  // opengraph-image.tsx file auto-generates a correctly-sized 1200×630 card
+  // (building photo composited in) and emits og:image + twitter:image with
+  // proper width/height, which X requires for a large-image card.
   return {
     metadataBase: new URL(SITE),
     title,
@@ -60,13 +62,11 @@ export async function generateMetadata({
       url: `${SITE}/edificio/${id}`,
       title,
       description,
-      images: [{ url: image }],
     },
     twitter: {
       card: "summary_large_image",
       title,
       description,
-      images: [image],
     },
   };
 }
