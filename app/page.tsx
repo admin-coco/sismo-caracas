@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import maplibregl from "maplibre-gl";
 import { supabase, type ReportRow } from "@/lib/supabase";
 import { severityInfo } from "@/lib/severity";
-import { CARACAS, whatsappShareUrl } from "@/lib/share";
+import { CARACAS, shareApp } from "@/lib/share";
 import {
   fetchContributions,
   addContribution,
@@ -200,6 +200,7 @@ export default function MapPage() {
   const loadedRef = useRef(false);
   const [count, setCount] = useState<number | null>(null);
   const [heatmap, setHeatmap] = useState(false);
+  const [copied, setCopied] = useState(false); // "link copied" toast
   // True when the browser can't create a WebGL context (some in-app browsers,
   // old devices). We then show a no-map fallback instead of a blank crash.
   const [mapError, setMapError] = useState(false);
@@ -366,10 +367,13 @@ export default function MapPage() {
     map.setLayoutProperty("points", "visibility", showPts);
   }
 
-  const shareUrl =
-    typeof window !== "undefined"
-      ? whatsappShareUrl(window.location.origin)
-      : "#";
+  async function handleShare() {
+    const result = await shareApp();
+    if (result === "copied") {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2500);
+    }
+  }
 
   if (mapError) {
     return (
@@ -398,9 +402,9 @@ export default function MapPage() {
           <a className="btn btn-primary" href="/reporte">
             ➕ Reportar edificio
           </a>
-          <a className="btn btn-whatsapp" href={shareUrl}>
-            📲 Compartir
-          </a>
+          <button className="btn btn-whatsapp" onClick={handleShare}>
+            {copied ? "✅ ¡Enlace copiado!" : "📲 Compartir"}
+          </button>
         </div>
       </main>
     );
@@ -424,9 +428,9 @@ export default function MapPage() {
         <a className="btn btn-primary" href="/reporte">
           ➕ Reportar edificio
         </a>
-        <a className="btn btn-whatsapp" href={shareUrl}>
-          📲 Compartir
-        </a>
+        <button className="btn btn-whatsapp" onClick={handleShare}>
+          {copied ? "✅ ¡Copiado!" : "📲 Compartir"}
+        </button>
       </div>
     </main>
   );

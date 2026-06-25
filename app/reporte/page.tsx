@@ -5,7 +5,7 @@ import maplibregl from "maplibre-gl";
 import imageCompression from "browser-image-compression";
 import { supabase, PHOTOS_BUCKET, type Severity } from "@/lib/supabase";
 import { SEVERITIES } from "@/lib/severity";
-import { CARACAS, whatsappShareUrl } from "@/lib/share";
+import { CARACAS, shareApp } from "@/lib/share";
 import { searchAddress, type GeoResult } from "@/lib/geocode";
 
 const OPENFREEMAP_STYLE = "https://tiles.openfreemap.org/styles/liberty";
@@ -31,6 +31,7 @@ export default function ReportPage() {
   // Honeypot: humans never see/fill this; bots auto-fill it. If set, we bail.
   const [hp, setHp] = useState("");
   const [helpOpen, setHelpOpen] = useState(false); // "Hecho con amor" help modal
+  const [copied, setCopied] = useState(false); // "link copied" toast
   const [error, setError] = useState<string | null>(null);
 
   // Initialize the draggable-pin map once.
@@ -186,10 +187,13 @@ export default function ReportPage() {
     }
   }
 
-  const shareUrl =
-    typeof window !== "undefined"
-      ? whatsappShareUrl(window.location.origin)
-      : "#";
+  async function handleShare() {
+    const result = await shareApp();
+    if (result === "copied") {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2500);
+    }
+  }
 
   if (done) {
     return (
@@ -201,9 +205,9 @@ export default function ReportPage() {
           que más gente reporte.
         </p>
         <div style={styles.actions}>
-          <a className="btn btn-whatsapp" href={shareUrl}>
-            📲 Compartir por WhatsApp
-          </a>
+          <button className="btn btn-whatsapp" onClick={handleShare}>
+            {copied ? "✅ ¡Enlace copiado!" : "📲 Compartir"}
+          </button>
           <a className="btn btn-ghost" href="/">
             🗺️ Ver el mapa
           </a>
