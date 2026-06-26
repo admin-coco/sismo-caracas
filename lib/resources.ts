@@ -67,10 +67,11 @@ export const EXTERNAL_RESOURCES: Resource[] = [
     logo: "/logos/tilin.svg",
   },
   {
-    badge: "Compra ahora, paga después",
+    badge: "Servicios",
     badgeColor: "#dc2626",
     name: "Cashea",
-    description: "Compra lo que necesitas y paga en cuotas.",
+    description:
+      "Compra lo que necesitas y paga en cuotas. Hasta el 30 de Junio no aplicarán cargo de reactivación.",
     url: "https://www.cashea.app",
     logo: "/logos/cashea.png",
   },
