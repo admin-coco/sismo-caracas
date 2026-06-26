@@ -61,6 +61,11 @@ export const EXTERNAL_RESOURCES: Resource[] = [
       "Ayuda directamente a familias afectadas enviando una donación.",
     url: "https://dona.yummyrides.com",
     logo: "/logos/yummy-rides.png",
+    benefits: [
+      "🚑 Viajes gratis a hospitales y clínicas",
+      "💸 Sin tarifa dinámica el resto del día",
+      "🙌 Conductores: 100% de sus ganancias",
+    ],
   },
   {
     badge: "Transporte",
@@ -69,6 +74,7 @@ export const EXTERNAL_RESOURCES: Resource[] = [
     description: "Pide un taxi seguro para movilizarte o ayudar a evacuar.",
     url: "https://ridery.app",
     logo: "/logos/ridery.png",
+    benefits: ["🚑 Viajes gratis a clínicas y hospitales"],
   },
   {
     badge: "Servicios",
@@ -83,10 +89,13 @@ export const EXTERNAL_RESOURCES: Resource[] = [
     badge: "Servicios",
     badgeColor: "#dc2626",
     name: "Cashea",
-    description:
-      "Compra lo que necesitas y paga en cuotas. Hasta el 30 de Junio no aplicarán cargo de reactivación.",
+    description: "Compra lo que necesitas y paga en cuotas.",
     url: "https://www.cashea.app",
     logo: "/logos/cashea.png",
+    benefits: [
+      "🆓 Sin cargo de reactivación de $4 (23–30 jun)",
+      "⭐ No pierdes tus puntos por pago tardío",
+    ],
   },
   {
     badge: "Donación",
