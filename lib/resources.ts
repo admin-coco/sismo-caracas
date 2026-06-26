@@ -91,6 +91,16 @@ export const EXTERNAL_RESOURCES: Resource[] = [
     ],
   },
   {
+    badge: "Reparaciones",
+    badgeColor: "#f97316",
+    name: "Tecniko",
+    description:
+      "Técnicos para reparar tu hogar: mecánica, plomería, electricidad y más.",
+    url: "https://tecniko.com",
+    logo: "/logos/tecniko.png",
+    benefits: ["💳 Paga las reparaciones en cuotas"],
+  },
+  {
     badge: "Servicios",
     badgeColor: "#dc2626",
     name: "Cashea",

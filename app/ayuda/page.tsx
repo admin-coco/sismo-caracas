@@ -77,20 +77,36 @@ export default function AyudaPage() {
         ))}
       </div>
 
-      <button
-        className="btn btn-whatsapp"
-        onClick={handleShare}
-        style={{ marginTop: 24, marginBottom: 32 }}
-      >
-        {copied ? "✅ ¡Enlace copiado!" : "📲 Compartir Ayuda"}
-      </button>
+      {/* Fixed share bar — always visible at the bottom while scrolling. */}
+      <div style={styles.shareBar}>
+        <button
+          className="btn btn-whatsapp"
+          onClick={handleShare}
+          style={{ maxWidth: 760, margin: "0 auto" }}
+        >
+          {copied ? "✅ ¡Enlace copiado!" : "📲🎟️ Compartir Promociones"}
+        </button>
+      </div>
     </main>
   );
 }
 
 const styles: Record<string, React.CSSProperties> = {
   // Top padding leaves room for the fixed-position TopNav pills.
-  page: { maxWidth: 1040, margin: "0 auto", padding: "84px 16px 16px" },
+  // Extra bottom padding so the last cards clear the fixed share bar.
+  page: { maxWidth: 1040, margin: "0 auto", padding: "84px 16px 110px" },
+  shareBar: {
+    position: "fixed",
+    left: 0,
+    right: 0,
+    bottom: 0,
+    padding: "12px 16px calc(env(safe-area-inset-bottom, 0px) + 12px)",
+    background: "rgba(250,246,236,0.96)",
+    backdropFilter: "blur(6px)",
+    WebkitBackdropFilter: "blur(6px)",
+    borderTop: "1px solid var(--border)",
+    zIndex: 40,
+  },
   header: { textAlign: "center", marginBottom: 22 },
   pill: {
     display: "inline-block",
