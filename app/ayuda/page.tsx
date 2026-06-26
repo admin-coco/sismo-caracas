@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { COCO_RESOURCES, EXTERNAL_RESOURCES, type Resource } from "@/lib/resources";
 import { shareApp } from "@/lib/share";
+import { TopNav } from "@/components/TopNav";
 
 function Card({ r }: { r: Resource }) {
   return (
@@ -41,6 +42,7 @@ export default function AyudaPage() {
   }
   return (
     <main style={styles.page}>
+      <TopNav showMapaLink />
       <header style={styles.header}>
         <h1 style={styles.title}>🤝 Ayuda y recursos</h1>
         <p style={styles.sub}>
@@ -82,7 +84,8 @@ export default function AyudaPage() {
 }
 
 const styles: Record<string, React.CSSProperties> = {
-  page: { maxWidth: 1040, margin: "0 auto", padding: 16 },
+  // Top padding leaves room for the fixed-position TopNav pills.
+  page: { maxWidth: 1040, margin: "0 auto", padding: "84px 16px 16px" },
   header: { textAlign: "center", marginBottom: 8 },
   title: { fontSize: 22, margin: "8px 0 4px" },
   sub: { color: "var(--muted)", margin: 0, fontSize: 14 },
