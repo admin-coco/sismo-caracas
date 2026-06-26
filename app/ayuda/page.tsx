@@ -5,6 +5,13 @@ import { COCO_RESOURCES, EXTERNAL_RESOURCES, type Resource } from "@/lib/resourc
 import { shareApp } from "@/lib/share";
 import { TopNav } from "@/components/TopNav";
 
+// Single grid sorted alphabetically by name, regardless of whether the
+// resource is one of Coco's own products or an external partner. The split
+// existed for editorial reasons but felt arbitrary to users.
+const ALL_RESOURCES: Resource[] = [...COCO_RESOURCES, ...EXTERNAL_RESOURCES]
+  .slice()
+  .sort((a, b) => a.name.localeCompare(b.name, "es"));
+
 function Card({ r }: { r: Resource }) {
   return (
     <a
@@ -44,32 +51,20 @@ export default function AyudaPage() {
     <main style={styles.page}>
       <TopNav showMapaLink />
       <header style={styles.header}>
-        <h1 style={styles.title}>🤝 Ayuda y recursos</h1>
+        <span style={styles.pill}>Ayuda comunitaria</span>
+        <h1 style={styles.title}>Ofertas de Ayuda</h1>
         <p style={styles.sub}>
-          Terremoto Venezuela · enlaces útiles para afectados y familiares
+          Estas empresas se encuentran otorgando servicios de ayuda y/o gratuitos.
         </p>
       </header>
 
-      <h2 style={styles.section}>Enviar ayuda</h2>
       <div style={styles.grid}>
-        {COCO_RESOURCES.map((r) => (
+        {ALL_RESOURCES.map((r) => (
           <Card key={r.url} r={r} />
         ))}
       </div>
 
-      <h2 style={styles.section}>Ayuda</h2>
-      <div style={styles.grid}>
-        {EXTERNAL_RESOURCES.map((r) => (
-          <Card key={r.url} r={r} />
-        ))}
-      </div>
-
-      <p style={styles.disclaimer}>
-        Estos enlaces son de terceros y se comparten solo como referencia.
-        Verifica la información antes de actuar.
-      </p>
-
-      <a className="btn btn-ghost" href="/" style={{ marginTop: 8 }}>
+      <a className="btn btn-ghost" href="/" style={{ marginTop: 24 }}>
         🗺️ Volver al mapa
       </a>
       <button
@@ -86,10 +81,21 @@ export default function AyudaPage() {
 const styles: Record<string, React.CSSProperties> = {
   // Top padding leaves room for the fixed-position TopNav pills.
   page: { maxWidth: 1040, margin: "0 auto", padding: "84px 16px 16px" },
-  header: { textAlign: "center", marginBottom: 8 },
-  title: { fontSize: 22, margin: "8px 0 4px" },
-  sub: { color: "var(--muted)", margin: 0, fontSize: 14 },
-  section: { fontSize: 15, margin: "22px 0 10px", color: "var(--text)" },
+  header: { textAlign: "center", marginBottom: 22 },
+  pill: {
+    display: "inline-block",
+    background: "#16a34a",
+    color: "#fff",
+    fontSize: 11,
+    fontWeight: 800,
+    letterSpacing: "0.08em",
+    textTransform: "uppercase",
+    padding: "5px 12px",
+    borderRadius: 999,
+    marginBottom: 10,
+  },
+  title: { fontSize: 26, fontWeight: 800, margin: "0 0 6px" },
+  sub: { color: "var(--muted)", margin: 0, fontSize: 14, lineHeight: 1.5 },
   // Up to 3 columns on desktop, collapsing to 1 on mobile.
   grid: {
     display: "grid",
@@ -133,10 +139,4 @@ const styles: Record<string, React.CSSProperties> = {
   name: { fontSize: 20, fontWeight: 800, margin: "0 0 6px" },
   desc: { color: "var(--muted)", fontSize: 15, lineHeight: 1.4 },
   visit: { color: "#60a5fa", fontWeight: 700 },
-  disclaimer: {
-    color: "var(--muted)",
-    fontSize: 12,
-    margin: "16px 0 0",
-    textAlign: "center",
-  },
 };
