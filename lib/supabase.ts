@@ -20,13 +20,13 @@ export const supabase = createClient(
   anonKey || "placeholder-anon-key",
   {
     auth: {
-      // Reporter rewards use email-OTP. Persist the session in localStorage so a
-      // reporter verifies once per device, and refresh tokens silently. We use
-      // the 6-digit OTP code path (verifyOtp), not magic-link redirects, so the
-      // client shouldn't try to parse a session out of the URL.
+      // Reporter rewards use magic-link auth. Persist the session in localStorage
+      // so a reporter signs in once per device, and refresh tokens silently.
+      // detectSessionInUrl lets the client parse the #access_token the magic link
+      // returns with, establishing the session on the landing page.
       persistSession: true,
       autoRefreshToken: true,
-      detectSessionInUrl: false,
+      detectSessionInUrl: true,
     },
   }
 );

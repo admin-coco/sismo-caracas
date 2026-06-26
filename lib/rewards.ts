@@ -44,6 +44,42 @@ export async function claimReport(reportId: string): Promise<void> {
   if (error) throw error;
 }
 
+// Magic-link login is a round-trip (leave to email, come back on a fresh page
+// load), so the just-submitted report id can't be held in memory. Stash it so
+// /mis-reportes can claim it once the reporter returns logged in.
+const PENDING_KEY = "sismo_pending_claim";
+
+export function rememberPendingClaim(reportId: string): void {
+  try {
+    localStorage.setItem(PENDING_KEY, reportId);
+  } catch {
+    /* localStorage unavailable (private mode) — claim just won't auto-run */
+  }
+}
+
+// Claim any stashed report id, then clear it. Safe to call repeatedly; the RPC
+// no-ops if the report is already claimed.
+export async function claimPending(): Promise<void> {
+  let pending: string | null = null;
+  try {
+    pending = localStorage.getItem(PENDING_KEY);
+  } catch {
+    return;
+  }
+  if (!pending) return;
+  try {
+    await claimReport(pending);
+  } catch (e) {
+    console.error(e);
+  } finally {
+    try {
+      localStorage.removeItem(PENDING_KEY);
+    } catch {
+      /* ignore */
+    }
+  }
+}
+
 // Withdrawable balance in dollars: $1 per approved, unpaid report.
 export function computeBalance(rows: MyReport[]): number {
   return rows.filter((r) => r.approved && !r.paid).length;

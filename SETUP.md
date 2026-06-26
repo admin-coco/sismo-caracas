@@ -201,10 +201,16 @@ revoke all on function public.claim_report(uuid) from public;
 grant execute on function public.claim_report(uuid) to authenticated;
 ```
 
-Then in **Authentication → Email Templates**, make sure the OTP/magic-link template
-renders the 6-digit code with `{{ .Token }}` (the default only includes
-`{{ .ConfirmationURL }}`, which won't work for the code-entry flow). Default Supabase
-SMTP is rate-limited; add a custom SMTP provider before high volume.
+Login uses Supabase **magic links** (the default email service — no custom SMTP needed).
+The only required dashboard step is **Authentication → URL Configuration**:
+- **Site URL**: `https://sismovenezuela.org`
+- **Redirect URLs**: add `https://sismovenezuela.org/**` (and `http://localhost:3000/**`
+  for local dev).
+
+The magic link returns the reporter to `/mis-reportes` already logged in. The default
+Supabase email service is **rate-limited** (a few emails/hour) — fine for launch, but add a
+custom SMTP provider (e.g. Resend) before higher volume; that also unlocks editing the email
+template if you want to brand it.
 
 ## 2. Storage bucket for photos
 

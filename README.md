@@ -34,7 +34,7 @@ Live at **[sismovenezuela.org](https://sismovenezuela.org)**.
   report to notify subscribers.
 - **PWA** — installable (`manifest.webmanifest`), plus `robots.txt` and `sitemap.xml` for SEO.
 - **Reporter rewards** (`/mis-reportes`) — reporters earn **$1 per approved report**. Report
-  submission stays anonymous; the success screen offers an optional **email-OTP** claim (no
+  submission stays anonymous; the success screen offers an optional **magic-link** claim (no
   passwords) that attributes the report to a reporter. Balance accrues from approved, unpaid
   reports; at **$5** the reporter withdraws via a prefilled email to Coco Wallet (manual
   payout — an admin marks reports `paid` in Supabase). RLS keeps each reporter's rows private

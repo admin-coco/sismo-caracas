@@ -9,6 +9,7 @@ import {
   fetchMyReports,
   computeBalance,
   buildPayoutMailto,
+  claimPending,
   MIN_WITHDRAWAL,
   type MyReport,
 } from "@/lib/rewards";
@@ -21,6 +22,8 @@ export default function MisReportesPage() {
 
   const load = useCallback(async () => {
     setLoadingRows(true);
+    // Claim a report stashed before magic-link login (if any), then fetch.
+    await claimPending();
     setRows(await fetchMyReports());
     setLoadingRows(false);
   }, []);
@@ -49,7 +52,7 @@ export default function MisReportesPage() {
           ver tus reportes y tu recompensa.
         </p>
         <div style={{ marginTop: 12 }}>
-          <OtpForm onVerified={load} />
+          <OtpForm />
         </div>
       </main>
     );
