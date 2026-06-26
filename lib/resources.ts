@@ -75,4 +75,13 @@ export const EXTERNAL_RESOURCES: Resource[] = [
     url: "https://www.cashea.app",
     logo: "/logos/cashea.png",
   },
+  {
+    badge: "Donación",
+    badgeColor: "#16a34a",
+    name: "GoFundMe",
+    description:
+      "Dona al fondo de ayuda para afectados por el terremoto de We Love Foundation. Más de $2M recaudados.",
+    url: "https://www.gofundme.com/f/emergency-relief-for-venezuela-earthquake-victims",
+    logo: "/logos/gofundme.png",
+  },
 ];
