@@ -1002,7 +1002,7 @@ export default function MapPage() {
               // centered like the emoji buttons (a bare ✚ is shorter than an
               // emoji, so it would otherwise ride high in the stretched pill).
               style={{ ...styles.toggle, display: "inline-flex", alignItems: "center", gap: 5 }}
-              href="https://terremotovenezuela.app/#hospitales"
+              href="https://terremotovenezuela.app/hospitales"
               target="_blank"
               rel="noopener noreferrer"
             >
