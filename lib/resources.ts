@@ -45,7 +45,7 @@ export const EXTERNAL_RESOURCES: Resource[] = [
     badgeColor: "#16a34a",
     name: "Yummy Rides",
     description: "Pide un viaje para movilizarte o ayudar a evacuar.",
-    url: "https://yummysuperapp.com",
+    url: "https://dona.yummyrides.com",
     logo: "/logos/yummy-rides.png",
   },
   {
