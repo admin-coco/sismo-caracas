@@ -574,6 +574,7 @@ export default function MapPage() {
   const loadedRef = useRef(false);
   const [count, setCount] = useState<number | null>(null);
   const [reports, setReports] = useState<ReportRow[]>([]); // for the grid below
+  const [selectedReport, setSelectedReport] = useState<ReportRow | null>(null); // detail modal (grid + map pin)
   const [heatmap, setHeatmap] = useState(false);
   const [copied, setCopied] = useState(false); // "link copied" toast
   // True when the browser can't create a WebGL context (some in-app browsers,
@@ -828,15 +829,26 @@ export default function MapPage() {
 
       loadedRef.current = true;
 
-      // Tap a single point → interactive popup (details + votes + photos/comments).
+      // Tap a single point → open the same centered detail modal as the grid
+      // (the old map-anchored popup got clipped by the floating buttons).
       map.on("click", "points", (e) => {
         const f = e.features?.[0];
         if (!f) return;
         const p = f.properties as Record<string, string>;
-        new maplibregl.Popup({ maxWidth: "280px" })
-          .setLngLat((f.geometry as GeoJSON.Point).coordinates as [number, number])
-          .setDOMContent(buildPopupNode(p))
-          .addTo(map);
+        const [lng, lat] = (f.geometry as GeoJSON.Point).coordinates as [
+          number,
+          number
+        ];
+        setSelectedReport({
+          id: p.id,
+          lat,
+          lng,
+          severity: Number(p.severity) as ReportRow["severity"],
+          place: p.place || null,
+          photo_url: p.photo_url || null,
+          note: p.note || null,
+          created_at: p.created_at,
+        });
       });
 
       map.on("mouseenter", "points", () => {
@@ -881,37 +893,28 @@ export default function MapPage() {
     }
   }
 
-  // Scroll back to the map and fly to a building's pin + open its popup.
+  // Scroll back to the map and fly to a building's pin. (Detail lives in the
+  // centered BuildingModal now, so no map-anchored popup.)
   function flyToReport(r: ReportRow) {
     window.scrollTo({ top: 0, behavior: "smooth" });
     const map = mapRef.current;
     if (!map) return;
     map.flyTo({ center: [r.lng, r.lat], zoom: 17 });
-    new maplibregl.Popup({ maxWidth: "280px" })
-      .setLngLat([r.lng, r.lat])
-      .setDOMContent(
-        buildPopupNode({
-          id: r.id,
-          severity: String(r.severity),
-          place: r.place ?? "",
-          photo_url: r.photo_url ?? "",
-          note: r.note ?? "",
-          created_at: r.created_at,
-        })
-      )
-      .addTo(map);
   }
 
   // Deep-link: /?b=<id> (e.g. from a shared /edificio/<id> link) → open that
   // building's pin once reports + map are ready. Fire once.
   const deepLinkedRef = useRef(false);
   useEffect(() => {
-    if (deepLinkedRef.current || !loadedRef.current || reports.length === 0) return;
+    // Open the detail modal as soon as reports are loaded; don't gate on the
+    // map being ready (the modal doesn't need it, and flyTo no-ops if not).
+    if (deepLinkedRef.current || reports.length === 0) return;
     const id = new URLSearchParams(window.location.search).get("b");
     if (!id) return;
     const r = reports.find((x) => x.id === id);
     if (r) {
       deepLinkedRef.current = true;
+      setSelectedReport(r); // open the detail modal for the shared building
       flyToReport(r);
     }
   }, [reports]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -1014,6 +1017,17 @@ export default function MapPage() {
 
       <BuildingGrid reports={reports} onLocate={flyToReport} />
       <SeoInfo />
+
+      {selectedReport && (
+        <BuildingModal
+          report={selectedReport}
+          onClose={() => setSelectedReport(null)}
+          onLocate={() => {
+            flyToReport(selectedReport);
+            setSelectedReport(null);
+          }}
+        />
+      )}
     </main>
   );
 }
