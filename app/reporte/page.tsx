@@ -386,37 +386,13 @@ export default function ReportPage() {
       />
       <header style={styles.header}>
         <div>
-          <h1 style={styles.title}>📝 Reportar</h1>
+          <h1 style={styles.title}>📝 Reportar edificio</h1>
           <p style={styles.sub}>Terremoto Venezuela · mapa colaborativo</p>
         </div>
         <a href="/" style={styles.verMapa}>
           🗺️ Ver mapa
         </a>
       </header>
-
-      {/* Type selector */}
-      <div style={styles.typeRow}>
-        <button
-          onClick={() => setReportType("edificio")}
-          style={{
-            ...styles.typeBtn,
-            ...(reportType === "edificio" ? styles.typeBtnActive : {}),
-          }}
-        >
-          🏚️ Edificio
-        </button>
-        <a
-          href="https://venezuelareporta.org/reportar"
-          target="_blank"
-          rel="noopener noreferrer"
-          style={styles.typeBtn}
-        >
-          🧍 Desaparecido
-        </a>
-        <a href="/acopio" style={styles.typeBtn}>
-          📦 Centro de ayuda
-        </a>
-      </div>
 
       {linkedBuilding && reportType === "persona" && (
         <p style={{ ...styles.hint, color: "#15803d" }}>
@@ -784,30 +760,6 @@ const styles: Record<string, React.CSSProperties> = {
   // Single column — clean and easy to fill top to bottom.
   grid: {
     display: "block",
-  },
-  typeRow: {
-    display: "flex",
-    gap: 6,
-    margin: "8px 0 10px",
-    flexWrap: "wrap",
-  },
-  typeBtn: {
-    flex: "1 1 30%",
-    textAlign: "center",
-    padding: "10px 6px",
-    borderRadius: 10,
-    border: "1px solid var(--border)",
-    background: "var(--panel)",
-    color: "var(--text)",
-    fontWeight: 700,
-    fontSize: 13,
-    textDecoration: "none",
-    cursor: "pointer",
-  },
-  typeBtnActive: {
-    background: "var(--rojo)",
-    color: "#fff",
-    borderColor: "var(--rojo)",
   },
   label: { display: "block", fontWeight: 700, margin: "10px 0 5px" },
   hint: { color: "var(--muted)", fontSize: 12, margin: "5px 0 0" },
