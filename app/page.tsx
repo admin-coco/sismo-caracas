@@ -1013,7 +1013,7 @@ export default function MapPage() {
             </a>
             <a
               style={styles.toggle}
-              href="https://venezuelareporta.org/"
+              href="https://terremotovenezuela.app/#desaparecidas"
               target="_blank"
               rel="noopener noreferrer"
             >
