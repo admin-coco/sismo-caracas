@@ -9,6 +9,7 @@ import { CARACAS, shareApp } from "@/lib/share";
 import { searchAddress, type GeoResult } from "@/lib/geocode";
 import { subscribeToPush, pushSupported } from "@/lib/push";
 import { addPerson } from "@/lib/persons";
+import { TopNav } from "@/components/TopNav";
 
 const OPENFREEMAP_STYLE = "https://tiles.openfreemap.org/styles/dark";
 
@@ -326,6 +327,7 @@ export default function ReportPage() {
   if (done) {
     return (
       <main style={styles.success}>
+        <TopNav showMapaLink />
         <div style={{ fontSize: 56 }}>✅</div>
         <h1 style={{ margin: "8px 0" }}>¡Gracias!</h1>
         <p style={{ color: "var(--muted)", maxWidth: 320 }}>
@@ -358,6 +360,7 @@ export default function ReportPage() {
 
   return (
     <main style={styles.page}>
+      <TopNav showMapaLink />
       {/* Honeypot: off-screen, hidden from humans & screen readers; only bots fill it. */}
       <input
         type="text"
@@ -713,7 +716,8 @@ export default function ReportPage() {
 }
 
 const styles: Record<string, React.CSSProperties> = {
-  page: { maxWidth: 480, margin: "0 auto", padding: "12px 16px" },
+  // Top padding leaves room for the fixed-position TopNav pills.
+  page: { maxWidth: 480, margin: "0 auto", padding: "84px 16px 16px" },
   header: {
     display: "flex",
     alignItems: "center",

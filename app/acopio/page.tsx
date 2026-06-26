@@ -5,6 +5,7 @@ import maplibregl from "maplibre-gl";
 import { addAcopio } from "@/lib/acopios";
 import { CARACAS } from "@/lib/share";
 import { searchAddress, type GeoResult } from "@/lib/geocode";
+import { TopNav } from "@/components/TopNav";
 
 const OPENFREEMAP_STYLE = "https://tiles.openfreemap.org/styles/dark";
 type GeoState = "idle" | "locating" | "ok" | "denied" | "error";
@@ -136,6 +137,7 @@ export default function AcopioPage() {
   if (done) {
     return (
       <main style={styles.success}>
+        <TopNav showMapaLink />
         <div style={{ fontSize: 56 }}>✅</div>
         <h1 style={{ margin: "8px 0" }}>¡Gracias!</h1>
         <p style={{ color: "var(--muted)", maxWidth: 320 }}>
@@ -156,6 +158,7 @@ export default function AcopioPage() {
 
   return (
     <main style={styles.page}>
+      <TopNav showMapaLink />
       <header style={styles.header}>
         <h1 style={styles.title}>📦 Reportar centro de acopio</h1>
         <p style={styles.sub}>Terremoto Venezuela · mapa colaborativo</p>
@@ -257,7 +260,8 @@ export default function AcopioPage() {
 }
 
 const styles: Record<string, React.CSSProperties> = {
-  page: { maxWidth: 520, margin: "0 auto", padding: 16 },
+  // Top padding leaves room for the fixed-position TopNav pills.
+  page: { maxWidth: 520, margin: "0 auto", padding: "84px 16px 16px" },
   header: { textAlign: "center", marginBottom: 10 },
   title: { fontSize: 20, margin: "4px 0 2px" },
   sub: { color: "var(--muted)", margin: 0, fontSize: 13 },

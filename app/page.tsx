@@ -18,6 +18,7 @@ import {
   uploadContributionPhoto,
   type ContributionRow,
 } from "@/lib/contributions";
+import { TopNav, PILL } from "@/components/TopNav";
 
 const OPENFREEMAP_STYLE = "https://tiles.openfreemap.org/styles/dark";
 const SRC = "reports";
@@ -929,13 +930,15 @@ export default function MapPage() {
     // No WebGL: skip the map but still show the count, actions, and the grid.
     return (
       <main>
+        <TopNav />
         <section
           style={{
             display: "flex",
             flexDirection: "column",
             alignItems: "center",
             textAlign: "center",
-            padding: "40px 24px 24px",
+            // Extra top padding leaves room for the floating nav pills.
+            padding: "84px 24px 24px",
             gap: 16,
           }}
         >
@@ -985,48 +988,29 @@ export default function MapPage() {
       <section style={{ position: "relative", height: "70dvh" }}>
         <div ref={containerRef} style={{ position: "absolute", inset: 0 }} />
 
-        <div style={styles.topBar}>
-          <button
-            style={{ ...styles.counter, border: "none", cursor: "pointer" }}
-            onClick={() =>
-              document
-                .getElementById("grid")
-                ?.scrollIntoView({ behavior: "smooth" })
-            }
-          >
-            📊 {count == null ? "…" : count.toLocaleString("es-VE")} edificios ›
-          </button>
-          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", justifyContent: "flex-end" }}>
-            <a
-              // inline-flex + center so the cross glyph and text sit vertically
-              // centered like the emoji buttons (a bare ✚ is shorter than an
-              // emoji, so it would otherwise ride high in the stretched pill).
-              style={{ ...styles.toggle, display: "inline-flex", alignItems: "center", gap: 5 }}
-              href="https://terremotovenezuela.app/hospitales"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              {/* No standalone red-cross emoji exists in Unicode, so use a
-                  red-styled cross glyph (✚) to get a proper medical cross. */}
-              <span style={{ color: "#dc2626", fontWeight: 900 }} aria-hidden="true">✚</span>
-              Hospitales y pacientes
-            </a>
-            <a
-              style={styles.toggle}
-              href="https://terremotovenezuela.app/#desaparecidas"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              🧍 Busca Personas
-            </a>
-            <a style={styles.toggle} href="/ayuda">
-              💚 Ayuda
-            </a>
-            <button style={styles.toggle} onClick={toggleHeatmap}>
-              {heatmap ? "📍 Puntos" : "🔥 Mapa de Calor"}
-            </button>
-          </div>
-        </div>
+        {/* Shared nav (Hospitales / Busca Personas / Ayuda) lives in TopNav.
+            The counter and heatmap toggle are map-only so they ride along as
+            `extras`, keeping them visually grouped with the rest of the bar. */}
+        <TopNav
+          extras={
+            <>
+              <button
+                style={{ ...PILL, pointerEvents: "auto" }}
+                onClick={() =>
+                  document
+                    .getElementById("grid")
+                    ?.scrollIntoView({ behavior: "smooth" })
+                }
+              >
+                📊 {count == null ? "…" : count.toLocaleString("es-VE")} edificios ›
+              </button>
+              <span style={{ flex: 1 }} />
+              <button style={{ ...PILL, pointerEvents: "auto" }} onClick={toggleHeatmap}>
+                {heatmap ? "📍 Puntos" : "🔥 Mapa de Calor"}
+              </button>
+            </>
+          }
+        />
 
         <div style={styles.bottomBar}>
           <a className="btn btn-primary" href="/reporte">
@@ -1173,17 +1157,6 @@ const seoStyles: Record<string, React.CSSProperties> = {
 };
 
 const styles: Record<string, React.CSSProperties> = {
-  topBar: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    display: "flex",
-    gap: 8,
-    padding: 12,
-    alignItems: "center",
-    justifyContent: "space-between",
-  },
   overlay: {
     position: "absolute",
     inset: 0,
@@ -1233,31 +1206,6 @@ const styles: Record<string, React.CSSProperties> = {
     height: 12,
     borderRadius: 999,
     display: "inline-block",
-  },
-  counter: {
-    // Light cream pill so it stands out against the dark map.
-    background: "rgba(250,246,236,0.95)",
-    color: "#1f2937",
-    padding: "10px 14px",
-    borderRadius: 999,
-    fontWeight: 700,
-    fontSize: 14,
-    boxShadow: "0 1px 4px rgba(0,0,0,0.35)",
-    whiteSpace: "nowrap", // keep "280 edificios ›" on one line
-    flexShrink: 0, // don't let the buttons squeeze it
-  },
-  toggle: {
-    background: "rgba(250,246,236,0.95)",
-    color: "#1f2937",
-    border: "none",
-    padding: "10px 14px",
-    borderRadius: 999,
-    fontWeight: 700,
-    fontSize: 14,
-    textDecoration: "none",
-    display: "inline-block",
-    whiteSpace: "nowrap",
-    boxShadow: "0 1px 4px rgba(0,0,0,0.35)",
   },
   bottomBar: {
     position: "absolute",
