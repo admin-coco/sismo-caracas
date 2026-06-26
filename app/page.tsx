@@ -224,19 +224,41 @@ function BuildingGrid({
   reports: ReportRow[];
   onLocate: (r: ReportRow) => void;
 }) {
-  // Show reports WITH a photo first (more useful/visual), newest-first within
-  // each group; `reports` is already ordered newest-first so a stable sort
-  // only needs to push photo-less ones to the back.
-  const recent = [...reports]
-    .sort((a, b) => (a.photo_url ? 0 : 1) - (b.photo_url ? 0 : 1))
-    .slice(0, 24);
   const [selected, setSelected] = useState<ReportRow | null>(null);
+  const [query, setQuery] = useState("");
+  const q = query.trim().toLowerCase();
+
+  // With a search term, filter ALL reports by name/place/note (more useful
+  // than only searching the visible preview). Otherwise show the 24 most
+  // recent, photo-first.
+  const recent = q
+    ? reports
+        .filter((r) =>
+          `${r.place ?? ""} ${r.note ?? ""}`.toLowerCase().includes(q)
+        )
+        .slice(0, 60)
+    : [...reports]
+        .sort((a, b) => (a.photo_url ? 0 : 1) - (b.photo_url ? 0 : 1))
+        .slice(0, 24);
+
   return (
     <section id="grid" style={gridStyles.wrap}>
-      <h2 style={gridStyles.heading}>🏚️ Edificios reportados recientemente</h2>
+      <div style={gridStyles.headerRow}>
+        <h2 style={gridStyles.heading}>🏚️ Edificios reportados</h2>
+        <input
+          type="search"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="🔎 Buscar por nombre o dirección…"
+          style={gridStyles.search}
+          aria-label="Buscar edificios reportados"
+        />
+      </div>
       {recent.length === 0 ? (
         <p style={gridStyles.empty}>
-          Aún no hay reportes. Sé el primero en reportar un edificio.
+          {q
+            ? `No se encontraron edificios para “${query}”.`
+            : "Aún no hay reportes. Sé el primero en reportar un edificio."}
         </p>
       ) : (
         <div style={gridStyles.grid}>
@@ -504,7 +526,27 @@ const modalStyles: Record<string, React.CSSProperties> = {
 
 const gridStyles: Record<string, React.CSSProperties> = {
   wrap: { maxWidth: 760, margin: "0 auto", padding: "24px 16px 40px" },
-  heading: { fontSize: 18, margin: "0 0 16px" },
+  headerRow: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 12,
+    flexWrap: "wrap",
+    marginBottom: 16,
+  },
+  heading: { fontSize: 18, margin: 0 },
+  search: {
+    flex: "1 1 240px",
+    maxWidth: 340,
+    minWidth: 200,
+    padding: "11px 14px",
+    fontSize: 16, // 16px avoids iOS zoom-on-focus
+    borderRadius: 999,
+    border: "1.5px solid var(--border)",
+    background: "var(--panel)",
+    color: "var(--text)",
+    outline: "none",
+  },
   empty: { color: "var(--muted)", textAlign: "center", padding: "24px 0" },
   grid: {
     display: "grid",
