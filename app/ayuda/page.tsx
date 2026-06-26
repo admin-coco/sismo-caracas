@@ -82,7 +82,7 @@ export default function AyudaPage() {
         <button
           className="btn btn-whatsapp"
           onClick={handleShare}
-          style={{ maxWidth: 760, margin: "0 auto" }}
+          style={{ width: "100%", maxWidth: 480 }}
         >
           {copied ? "✅ ¡Enlace copiado!" : "📲🎟️ Compartir Promociones"}
         </button>
@@ -100,6 +100,8 @@ const styles: Record<string, React.CSSProperties> = {
     left: 0,
     right: 0,
     bottom: 0,
+    display: "flex",
+    justifyContent: "center", // center the button on wide screens
     padding: "12px 16px calc(env(safe-area-inset-bottom, 0px) + 12px)",
     background: "rgba(250,246,236,0.96)",
     backdropFilter: "blur(6px)",
