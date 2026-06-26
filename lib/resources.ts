@@ -1,3 +1,5 @@
+import type { CSSProperties } from "react";
+
 // Curated help resources shown on /ayuda. `badge` color matches the category.
 export interface Resource {
   badge: string;
@@ -7,6 +9,7 @@ export interface Resource {
   url: string;
   logo?: string; // path under /public, shown top-left of the card
   logoHeight?: number; // override default logo height (px) for tighter-cropped logos
+  logoStyle?: CSSProperties; // extra overrides (e.g. negative margins to crop padding)
 }
 
 // Coco services + Ridery — our own response options, shown first.
@@ -83,6 +86,10 @@ export const EXTERNAL_RESOURCES: Resource[] = [
       "Dona al fondo de ayuda para afectados por el terremoto de We Love Foundation. Más de $2M recaudados.",
     url: "https://www.gofundme.com/f/emergency-relief-for-venezuela-earthquake-victims",
     logo: "/logos/gofundme.png",
-    logoHeight: 96, // square logo with heavy transparent padding — needs to be large to read
+    // Square PNG with heavy transparent padding: scale it up, then crop the
+    // built-in top/bottom whitespace with negative margins so the visible
+    // wordmark matches the height/alignment of the other (tight) logos.
+    logoHeight: 84,
+    logoStyle: { marginTop: -26, marginBottom: -16 },
   },
 ];

@@ -25,7 +25,11 @@ function Card({ r }: { r: Resource }) {
         <img
           src={r.logo}
           alt={r.name}
-          style={{ ...styles.logo, ...(r.logoHeight ? { height: r.logoHeight } : {}) }}
+          style={{
+            ...styles.logo,
+            ...(r.logoHeight ? { height: r.logoHeight } : {}),
+            ...(r.logoStyle ?? {}),
+          }}
         />
       )}
       <div style={styles.name}>{r.name}</div>
