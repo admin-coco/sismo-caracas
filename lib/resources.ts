@@ -83,5 +83,6 @@ export const EXTERNAL_RESOURCES: Resource[] = [
       "Dona al fondo de ayuda para afectados por el terremoto de We Love Foundation. Más de $2M recaudados.",
     url: "https://www.gofundme.com/f/emergency-relief-for-venezuela-earthquake-victims",
     logo: "/logos/gofundme.png",
+    logoHeight: 44, // square 600×600 — bump like Coco Mercado so it doesn't read tiny
   },
 ];
