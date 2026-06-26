@@ -61,7 +61,7 @@ export default function AyudaPage() {
     }
   }
   return (
-    <main style={styles.page}>
+    <main className="ayuda-page" style={styles.page}>
       <TopNav showMapaLink />
       <header style={styles.header}>
         <span style={styles.pill}>Ayuda comunitaria</span>
@@ -93,8 +93,15 @@ export default function AyudaPage() {
 
 const styles: Record<string, React.CSSProperties> = {
   // Top padding leaves room for the fixed-position TopNav pills.
-  // Extra bottom padding so the last cards clear the fixed share bar.
-  page: { maxWidth: 1040, margin: "0 auto", padding: "84px 16px 110px" },
+  // Horizontal + bottom padding here; top padding is responsive via the
+  // .ayuda-page class (inline padding-top would override the class).
+  page: {
+    maxWidth: 1040,
+    margin: "0 auto",
+    paddingLeft: 16,
+    paddingRight: 16,
+    paddingBottom: 110,
+  },
   shareBar: {
     position: "fixed",
     left: 0,

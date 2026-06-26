@@ -93,3 +93,14 @@ a {
 .maplibregl-ctrl-attrib.maplibregl-compact:not(.maplibregl-compact-show) {
   margin: 0 10px 10px 0;
 }
+
+/* Ayuda page: the fixed TopNav pills wrap to two rows on narrow screens, so
+   reserve more top space there to keep the page title clear of them. */
+.ayuda-page {
+  padding-top: 190px;
+}
+@media (min-width: 720px) {
+  .ayuda-page {
+    padding-top: 84px;
+  }
+}
