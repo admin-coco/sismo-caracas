@@ -161,6 +161,51 @@ create policy "anon read approved" on public.missing_persons
   for select to anon using (approved = true);
 ```
 
+### Reporter rewards (optional — $1 per approved report)
+
+Lets reporters earn $1 per **approved** report and withdraw at $5 via Coco Wallet.
+Identity is Supabase email-OTP; attribution and reads are gated by RLS so a reporter
+sees only their own rows. Run once:
+
+```sql
+-- Columns: who claimed the report, and whether they've been paid.
+alter table public.reports
+  add column reporter_id uuid references auth.users(id) on delete set null,
+  add column paid boolean not null default false;
+
+create index reports_reporter_idx on public.reports (reporter_id)
+  where reporter_id is not null;
+
+-- Logged-in users must still see the public map: once a user authenticates their
+-- role is `authenticated`, so the existing anon SELECT policy no longer covers
+-- them. Without this, the map goes blank for logged-in users.
+create policy "reports_public_read_auth" on public.reports
+  for select to authenticated using (approved = true);
+
+-- A reporter reads their OWN rows (any approval/paid state) for "Mis reportes".
+create policy "reports_self_read" on public.reports
+  for select to authenticated using (reporter_id = auth.uid());
+
+-- Claim RPC: stamps reporter_id only if the report is unclaimed (can't be stolen
+-- or double-claimed). SECURITY DEFINER so no user-facing UPDATE policy is needed —
+-- `paid` therefore stays writable only by the dashboard/service role.
+create or replace function public.claim_report(p_report_id uuid)
+returns void language plpgsql security definer set search_path = public as $$
+begin
+  if auth.uid() is null then raise exception 'not authenticated'; end if;
+  update public.reports set reporter_id = auth.uid()
+   where id = p_report_id and reporter_id is null;
+end;
+$$;
+revoke all on function public.claim_report(uuid) from public;
+grant execute on function public.claim_report(uuid) to authenticated;
+```
+
+Then in **Authentication → Email Templates**, make sure the OTP/magic-link template
+renders the 6-digit code with `{{ .Token }}` (the default only includes
+`{{ .ConfirmationURL }}`, which won't work for the code-entry flow). Default Supabase
+SMTP is rate-limited; add a custom SMTP provider before high volume.
+
 ## 2. Storage bucket for photos
 
 1. **Storage** → New bucket → name it exactly **`photos`** → toggle **Public bucket** ON → create.
@@ -196,3 +241,7 @@ Locally: copy `.env.example` to `.env.local` and paste them in.
 - Hide spam: in the **Table Editor**, set a row's `approved` to `false` (it disappears from the map).
 - To require approval for *all* new reports, change the column default:
   `alter table public.reports alter column approved set default false;`
+- **Pay a reward** (if the rewards feature is enabled): a report counts toward a reporter's
+  balance only while `approved = true` and `paid = false`. After paying a reporter via Coco
+  Wallet, set the paid reports' `paid` to `true` in the Table Editor — their balance drops
+  accordingly. (Reporters reach the payout email from `/mis-reportes`.)

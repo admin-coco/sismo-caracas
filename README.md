@@ -33,6 +33,12 @@ Live at **[sismovenezuela.org](https://sismovenezuela.org)**.
 - **Web push** — optional opt-in; a Supabase webhook pings `/api/notify` on each new
   report to notify subscribers.
 - **PWA** — installable (`manifest.webmanifest`), plus `robots.txt` and `sitemap.xml` for SEO.
+- **Reporter rewards** (`/mis-reportes`) — reporters earn **$1 per approved report**. Report
+  submission stays anonymous; the success screen offers an optional **email-OTP** claim (no
+  passwords) that attributes the report to a reporter. Balance accrues from approved, unpaid
+  reports; at **$5** the reporter withdraws via a prefilled email to Coco Wallet (manual
+  payout — an admin marks reports `paid` in Supabase). RLS keeps each reporter's rows private
+  to them. Setup is **optional** — see [SETUP.md §Reporter rewards](./SETUP.md).
 
 > The map has no clustering — every pin stays visible at every zoom. WebGL failures
 > (some in-app browsers / old devices) degrade gracefully to a no-map fallback that still
@@ -48,6 +54,7 @@ Live at **[sismovenezuela.org](https://sismovenezuela.org)**.
 | `/reporte` | Report a damaged building or a missing person |
 | `/acopio` | Report an aid collection center |
 | `/ayuda` | Ofertas de Ayuda — partner resources |
+| `/mis-reportes` | Reporter rewards: email-OTP login, balance, report list, withdraw via Coco Wallet |
 | `/edificio/[id]` | Per-building share page (OG image → redirect to map) |
 | `/api/notify` | Server route: sends web-push on new reports (webhook-triggered) |
 | `/manifest.webmanifest`, `/robots.txt`, `/sitemap.xml` | PWA + SEO |

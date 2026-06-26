@@ -17,7 +17,18 @@ if (!url || !anonKey) {
 
 export const supabase = createClient(
   url || "https://placeholder.supabase.co",
-  anonKey || "placeholder-anon-key"
+  anonKey || "placeholder-anon-key",
+  {
+    auth: {
+      // Reporter rewards use email-OTP. Persist the session in localStorage so a
+      // reporter verifies once per device, and refresh tokens silently. We use
+      // the 6-digit OTP code path (verifyOtp), not magic-link redirects, so the
+      // client shouldn't try to parse a session out of the URL.
+      persistSession: true,
+      autoRefreshToken: true,
+      detectSessionInUrl: false,
+    },
+  }
 );
 
 export const PHOTOS_BUCKET = "photos";

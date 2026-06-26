@@ -9,6 +9,7 @@ import { CARACAS, shareApp } from "@/lib/share";
 import { searchAddress, type GeoResult } from "@/lib/geocode";
 import { addPerson } from "@/lib/persons";
 import { TopNav } from "@/components/TopNav";
+import { ClaimRewardPanel } from "@/components/ClaimRewardPanel";
 
 const OPENFREEMAP_STYLE = "https://tiles.openfreemap.org/styles/dark";
 
@@ -30,6 +31,7 @@ export default function ReportPage() {
   const [file, setFile] = useState<File | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [done, setDone] = useState(false);
+  const [reportId, setReportId] = useState<string | null>(null); // for reward claim
   // Honeypot: humans never see/fill this; bots auto-fill it. If set, we bail.
   const [hp, setHp] = useState("");
   const [helpOpen, setHelpOpen] = useState(false); // "Hecho con amor" help modal
@@ -298,9 +300,12 @@ export default function ReportPage() {
     setError(null);
     try {
       const photo_url = await uploadPhoto(file);
-      // No .select() chained on purpose: the restrictive RLS SELECT policy
-      // would block the read-back and surface a spurious error.
+      // Generate the id client-side so the success screen can attribute this
+      // report to a reporter (claim_report RPC) for the $1 reward — without a
+      // .select() read-back, which the restrictive RLS SELECT policy would block.
+      const newId = crypto.randomUUID();
       const { error: insErr } = await supabase.from("reports").insert({
+        id: newId,
         lat: coords.lat,
         lng: coords.lng,
         severity,
@@ -309,6 +314,7 @@ export default function ReportPage() {
         photo_url,
       });
       if (insErr) throw insErr;
+      setReportId(newId);
       setDone(true);
     } catch (e) {
       console.error(e);
@@ -338,6 +344,7 @@ export default function ReportPage() {
           Tu reporte ayuda a entender dónde se necesita ayuda. Compártelo para
           que más gente reporte.
         </p>
+        {reportId && <ClaimRewardPanel reportId={reportId} />}
         <div style={styles.actions}>
           <button className="btn btn-whatsapp" onClick={handleShare}>
             {copied ? "✅ ¡Enlace copiado!" : "📲 Compartir"}
@@ -355,6 +362,7 @@ export default function ReportPage() {
               setPlace("");
               setStep(1);
               setLocationSet(false);
+              setReportId(null);
             }}
           >
             Reportar otro edificio
@@ -389,8 +397,8 @@ export default function ReportPage() {
           <h1 style={styles.title}>📝 Reportar edificio</h1>
           <p style={styles.sub}>Terremoto Venezuela · mapa colaborativo</p>
         </div>
-        <a href="/" style={styles.verMapa}>
-          🗺️ Ver mapa
+        <a href="/mis-reportes" style={styles.verMapa}>
+          💵 Mis reportes
         </a>
       </header>
 
