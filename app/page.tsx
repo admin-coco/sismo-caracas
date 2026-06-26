@@ -657,8 +657,14 @@ export default function MapPage() {
       map = new maplibregl.Map({
         container: containerRef.current,
         style: OPENFREEMAP_STYLE,
-        center: [CARACAS.lng, CARACAS.lat],
-        zoom: CARACAS.zoom,
+        // Fit northern Venezuela (Maracaibo → Margarita/Trinidad) on load.
+        // fitBounds picks the right zoom for any screen width, so it looks
+        // consistent on desktop and mobile.
+        bounds: [
+          [-73.0, 8.2], // SW
+          [-61.5, 11.6], // NE
+        ],
+        fitBoundsOptions: { padding: 20 },
         // Compact attribution collapses to a small ⓘ; the action buttons float
         // above it (see bottomBar style) so nothing is covered.
         attributionControl: { compact: true },
