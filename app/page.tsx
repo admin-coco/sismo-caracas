@@ -1128,14 +1128,57 @@ function SeoInfo() {
           personas reporten.
         </li>
       </ul>
+      <h2 style={seoStyles.h2}>Preguntas frecuentes</h2>
+      {FAQS.map((f) => (
+        <div key={f.q} style={{ marginTop: 12 }}>
+          <h3 style={seoStyles.q}>{f.q}</h3>
+          <p style={seoStyles.a}>{f.a}</p>
+        </div>
+      ))}
+
       <p style={seoStyles.pSmall}>
         Información sobre el sismo y el terremoto en Venezuela, recopilada de
         forma colaborativa. Los reportes son enviados por la comunidad y no
         constituyen información oficial. Hecho con 💚 por Coco Wallet.
       </p>
+
+      {/* FAQ structured data — can earn rich snippets in Google. */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "FAQPage",
+            mainEntity: FAQS.map((f) => ({
+              "@type": "Question",
+              name: f.q,
+              acceptedAnswer: { "@type": "Answer", text: f.a },
+            })),
+          }),
+        }}
+      />
     </section>
   );
 }
+
+const FAQS = [
+  {
+    q: "¿Cómo reporto un edificio dañado por el terremoto en Venezuela?",
+    a: "Toca «Reportar», marca la ubicación del edificio en el mapa, elige el nivel de daño (leve, moderado, severo o colapsado) y sube una foto. Tu reporte aparece de inmediato en el mapa colaborativo.",
+  },
+  {
+    q: "¿Es gratis usar SismoVenezuela?",
+    a: "Sí. SismoVenezuela es un mapa colaborativo gratuito y abierto para que cualquier persona reporte daños y consulte la situación tras el terremoto.",
+  },
+  {
+    q: "¿Cómo busco a una persona desaparecida tras el terremoto?",
+    a: "Usa el botón «Busca Personas», que te lleva a venezuelareporta.org, donde puedes registrar y consultar personas desaparecidas en Venezuela.",
+  },
+  {
+    q: "¿Dónde encuentro centros de acopio y ayuda?",
+    a: "En la sección de Ayuda y en los puntos verdes del mapa puedes ver y reportar centros de acopio donde se reciben víveres, agua y donaciones para los afectados.",
+  },
+];
 
 const seoStyles: Record<string, React.CSSProperties> = {
   wrap: { maxWidth: 760, margin: "0 auto", padding: "8px 16px 48px" },
@@ -1154,6 +1197,8 @@ const seoStyles: Record<string, React.CSSProperties> = {
     paddingLeft: 20,
     margin: 0,
   },
+  q: { fontSize: 15, fontWeight: 700, margin: "0 0 4px" },
+  a: { color: "var(--muted)", fontSize: 14, lineHeight: 1.5, margin: 0 },
 };
 
 const styles: Record<string, React.CSSProperties> = {
