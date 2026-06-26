@@ -69,7 +69,7 @@ export const EXTERNAL_RESOURCES: Resource[] = [
     badgeColor: "#dc2626",
     name: "Cashea",
     description: "Compra lo que necesitas y paga en cuotas.",
-    url: "https://cashea.app",
+    url: "https://www.cashea.app",
     logo: "/logos/cashea.png",
   },
 ];
