@@ -77,13 +77,10 @@ export default function AyudaPage() {
         ))}
       </div>
 
-      <a className="btn btn-ghost" href="/" style={{ marginTop: 24 }}>
-        🗺️ Volver al mapa
-      </a>
       <button
         className="btn btn-whatsapp"
         onClick={handleShare}
-        style={{ marginTop: 12, marginBottom: 32 }}
+        style={{ marginTop: 24, marginBottom: 32 }}
       >
         {copied ? "✅ ¡Enlace copiado!" : "📲 Compartir Ayuda"}
       </button>
