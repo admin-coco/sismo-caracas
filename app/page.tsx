@@ -1243,6 +1243,8 @@ const styles: Record<string, React.CSSProperties> = {
     fontWeight: 700,
     fontSize: 14,
     boxShadow: "0 1px 4px rgba(0,0,0,0.35)",
+    whiteSpace: "nowrap", // keep "280 edificios ›" on one line
+    flexShrink: 0, // don't let the buttons squeeze it
   },
   toggle: {
     background: "rgba(250,246,236,0.95)",
