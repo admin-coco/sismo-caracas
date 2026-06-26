@@ -41,7 +41,7 @@ export const EXTERNAL_RESOURCES: Resource[] = [
     logo: "/logos/yummy-marketplace.png",
   },
   {
-    badge: "Transporte",
+    badge: "Donación",
     badgeColor: "#16a34a",
     name: "Yummy Rides",
     description:
