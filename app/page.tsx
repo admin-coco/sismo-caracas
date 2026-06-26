@@ -958,6 +958,18 @@ export default function MapPage() {
 
   return (
     <main>
+      {/* Crawlable heading + intro for SEO (visually hidden, read by Google
+          and screen readers since the map itself has little indexable text). */}
+      <h1 className="visually-hidden">
+        Terremoto Venezuela: Mapa de Edificios Dañados
+      </h1>
+      <p className="visually-hidden">
+        Mapa colaborativo en tiempo real de los edificios dañados por el
+        terremoto en Venezuela. Reporta daños en Caracas, La Guaira y todo el
+        país, busca personas desaparecidas y encuentra centros de acopio y
+        ayuda. Hecho por la comunidad para la comunidad.
+      </p>
+
       {/* Full-screen map hero. Overlays are positioned relative to this. */}
       {/* 70dvh, not 100dvh, so the "Edificios reportados" grid peeks below
           the map — gives users an obvious place to scroll to. */}
@@ -1083,9 +1095,73 @@ export default function MapPage() {
       </section>
 
       <BuildingGrid reports={reports} onLocate={flyToReport} />
+      <SeoInfo />
     </main>
   );
 }
+
+// Visible informational section — gives users context and gives Google
+// crawlable, keyword-rich content (the map itself indexes poorly).
+function SeoInfo() {
+  return (
+    <section style={seoStyles.wrap}>
+      <h2 style={seoStyles.h2}>¿Qué es SismoVenezuela?</h2>
+      <p style={seoStyles.p}>
+        <strong>SismoVenezuela</strong> es un mapa colaborativo y gratuito de los{" "}
+        <strong>edificios dañados por el terremoto en Venezuela</strong>.
+        Cualquier persona puede reportar un edificio con grietas, daños
+        estructurales o colapso en <strong>Caracas, La Guaira</strong> y todo el
+        país. Los reportes aparecen en el mapa en tiempo real para ayudar a
+        vecinos, familiares y equipos de rescate a entender dónde se necesita
+        ayuda.
+      </p>
+      <h2 style={seoStyles.h2}>¿Cómo usar el mapa de daños?</h2>
+      <ul style={seoStyles.ul}>
+        <li>
+          <strong>Reporta un edificio dañado:</strong> marca la ubicación,
+          elige el nivel de daño (leve, moderado, severo o colapsado) y sube una
+          foto.
+        </li>
+        <li>
+          <strong>Busca personas desaparecidas</strong> tras el terremoto a
+          través de nuestros aliados.
+        </li>
+        <li>
+          <strong>Encuentra centros de acopio y ayuda</strong> cercanos para
+          recibir o donar víveres.
+        </li>
+        <li>
+          <strong>Comparte</strong> el mapa por WhatsApp y redes para que más
+          personas reporten.
+        </li>
+      </ul>
+      <p style={seoStyles.pSmall}>
+        Información sobre el sismo y el terremoto en Venezuela, recopilada de
+        forma colaborativa. Los reportes son enviados por la comunidad y no
+        constituyen información oficial. Hecho con 💚 por Coco Wallet.
+      </p>
+    </section>
+  );
+}
+
+const seoStyles: Record<string, React.CSSProperties> = {
+  wrap: { maxWidth: 760, margin: "0 auto", padding: "8px 16px 48px" },
+  h2: { fontSize: 18, fontWeight: 800, margin: "20px 0 8px" },
+  p: { color: "var(--text)", fontSize: 15, lineHeight: 1.6, margin: 0 },
+  pSmall: {
+    color: "var(--muted)",
+    fontSize: 13,
+    lineHeight: 1.5,
+    marginTop: 20,
+  },
+  ul: {
+    color: "var(--text)",
+    fontSize: 15,
+    lineHeight: 1.6,
+    paddingLeft: 20,
+    margin: 0,
+  },
+};
 
 const styles: Record<string, React.CSSProperties> = {
   topBar: {
