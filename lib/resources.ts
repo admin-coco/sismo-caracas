@@ -91,6 +91,16 @@ export const EXTERNAL_RESOURCES: Resource[] = [
     ],
   },
   {
+    badge: "Salud",
+    badgeColor: "#0d9488",
+    name: "Latydo",
+    description:
+      "Atención médica a distancia para afectados por el terremoto.",
+    url: "https://latydo.com",
+    logo: "/logos/latydo.png",
+    benefits: ["🩺 Consulta telemédica gratis"],
+  },
+  {
     badge: "Reparaciones",
     badgeColor: "#f97316",
     name: "Tecniko",
