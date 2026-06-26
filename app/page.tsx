@@ -657,12 +657,12 @@ export default function MapPage() {
       map = new maplibregl.Map({
         container: containerRef.current,
         style: OPENFREEMAP_STYLE,
-        // Fit northern Venezuela (Maracaibo → Margarita/Trinidad) on load.
-        // fitBounds picks the right zoom for any screen width, so it looks
-        // consistent on desktop and mobile.
+        // Fit the Caracas corridor (Valencia → Caracas → Guarenas) on load —
+        // zoomed in enough that neighborhood/sector labels appear. fitBounds
+        // picks the right zoom per screen width (desktop & mobile).
         bounds: [
-          [-73.0, 8.2], // SW
-          [-61.5, 11.6], // NE
+          [-68.3, 10.0], // SW (near Valencia/Puerto Cabello)
+          [-65.8, 10.75], // NE (toward Capaya/Barlovento coast)
         ],
         fitBoundsOptions: { padding: 20 },
         // Compact attribution collapses to a small ⓘ; the action buttons float
