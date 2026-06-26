@@ -58,7 +58,7 @@ export const EXTERNAL_RESOURCES: Resource[] = [
     logo: "/logos/ridery.png",
   },
   {
-    badge: "Pagos",
+    badge: "Servicios",
     badgeColor: "#0ea5e9",
     name: "Tilín",
     description:
