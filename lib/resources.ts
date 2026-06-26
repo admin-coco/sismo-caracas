@@ -116,4 +116,14 @@ export const EXTERNAL_RESOURCES: Resource[] = [
     logoHeight: 84,
     logoStyle: { marginTop: -26, marginBottom: -16 },
   },
+  {
+    badge: "Enviar dinero",
+    badgeColor: "#0ea5e9",
+    name: "Meru",
+    description:
+      "Envía dinero a familiares y amigos en Venezuela totalmente gratis, desde toda Latam, Europa y USA.",
+    url: "https://getmeru.com",
+    logo: "/logos/meru.png",
+    logoHeight: 44, // square 1081×1081 — bump like Coco Mercado so it doesn't read tiny
+  },
 ];
