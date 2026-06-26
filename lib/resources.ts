@@ -157,4 +157,16 @@ export const EXTERNAL_RESOURCES: Resource[] = [
     url: "https://www.binance.com/es-LA/blog/fundaci%C3%B3n/494861573422684842",
     logo: "/logos/binance.png",
   },
+  {
+    // New category "Enviar cripto" — amber to visually distinguish from the
+    // blue "Enviar dinero" tiles (Coco Wallet / Meru / Binance).
+    badge: "Enviar cripto",
+    badgeColor: "#f59e0b",
+    name: "UCAB",
+    description:
+      "Fondo de emergencia desde la Academia Blockchain, Trading & Cripto UCAB. Donaciones recibidas en cripto.",
+    url: "https://btc.academiasucab.com/fondo-emergencia-sismo-vzla-2026/",
+    logo: "/logos/ucab.png",
+    logoHeight: 44, // two-line stacked layout — bump like Coco Mercado so it reads
+  },
 ];
