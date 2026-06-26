@@ -3,15 +3,10 @@
 import { useEffect, useRef, useState } from "react";
 import maplibregl from "maplibre-gl";
 import { supabase, type ReportRow } from "@/lib/supabase";
-import { severityInfo, SEVERITIES } from "@/lib/severity";
+import { severityInfo } from "@/lib/severity";
 import { CARACAS, shareApp, SHARE_URL } from "@/lib/share";
 import { fetchAcopios, type AcopioRow } from "@/lib/acopios";
 import { fetchPersons, type PersonRow } from "@/lib/persons";
-import {
-  RESUMEN_STATS,
-  RESUMEN_SOURCE,
-  RESUMEN_DATE,
-} from "@/lib/stats";
 import {
   fetchContributions,
   addContribution,
@@ -579,11 +574,8 @@ export default function MapPage() {
   const loadedRef = useRef(false);
   const [count, setCount] = useState<number | null>(null);
   const [reports, setReports] = useState<ReportRow[]>([]); // for the grid below
-  const [acopioCount, setAcopioCount] = useState(0);
-  const [personCount, setPersonCount] = useState(0);
   const [heatmap, setHeatmap] = useState(false);
   const [copied, setCopied] = useState(false); // "link copied" toast
-  const [resumenOpen, setResumenOpen] = useState(false); // stats modal
   // True when the browser can't create a WebGL context (some in-app browsers,
   // old devices). We then show a no-map fallback instead of a blank crash.
   const [mapError, setMapError] = useState(false);
@@ -712,7 +704,6 @@ export default function MapPage() {
 
       // Centros de acopio: green pins, separate source.
       const acopios = await fetchAcopios();
-      setAcopioCount(acopios.length);
       map.addSource(ACOPIO_SRC, {
         type: "geojson",
         data: acopiosToGeoJSON(acopios),
@@ -762,7 +753,6 @@ export default function MapPage() {
 
       // Missing persons: purple pins, separate source.
       const persons = await fetchPersons();
-      setPersonCount(persons.length);
       map.addSource(PERSON_SRC, {
         type: "geojson",
         data: personsToGeoJSON(persons),
@@ -1020,71 +1010,6 @@ export default function MapPage() {
             {copied ? "✅ ¡Copiado!" : "📲 Compartir"}
           </button>
         </div>
-
-        {resumenOpen && (
-          <div style={styles.overlay} onClick={() => setResumenOpen(false)}>
-            <div style={styles.modal} onClick={(e) => e.stopPropagation()}>
-              <button
-                onClick={() => setResumenOpen(false)}
-                style={styles.modalClose}
-                aria-label="Cerrar"
-              >
-                ✕
-              </button>
-              <h2 style={{ margin: "0 0 2px", fontSize: 18 }}>
-                📊 Resumen · {RESUMEN_DATE}
-              </h2>
-              <p style={{ color: "var(--muted)", fontSize: 12, margin: "0 0 14px" }}>
-                {RESUMEN_SOURCE}
-              </p>
-
-              {RESUMEN_STATS.map((s) => (
-                <div key={s.label} style={styles.statRow}>
-                  <span style={{ color: "var(--muted)" }}>{s.label}</span>
-                  <span style={{ color: s.color, fontWeight: 800 }}>{s.value}</span>
-                </div>
-              ))}
-              <div style={styles.statRow}>
-                <span style={{ color: "var(--muted)" }}>Edificios reportados</span>
-                <span style={{ color: "#fbbf24", fontWeight: 800 }}>
-                  {count == null ? "…" : count.toLocaleString("es-VE")}
-                </span>
-              </div>
-              <div style={styles.statRow}>
-                <span style={{ color: "var(--muted)" }}>Centros de acopio</span>
-                <span style={{ color: "#15803d", fontWeight: 800 }}>
-                  {acopioCount.toLocaleString("es-VE")}
-                </span>
-              </div>
-              <div style={styles.statRow}>
-                <span style={{ color: "var(--muted)" }}>Desaparecidos reportados</span>
-                <span style={{ color: "#7c3aed", fontWeight: 800 }}>
-                  {personCount.toLocaleString("es-VE")}
-                </span>
-              </div>
-
-              {/* Severity breakdown from our own data */}
-              <div style={styles.breakdown}>
-                {SEVERITIES.map((sev) => {
-                  const n = reports.filter((r) => r.severity === sev.value).length;
-                  return (
-                    <div key={sev.value} style={styles.breakRow}>
-                      <span style={{ ...styles.dot, background: sev.color }} />
-                      <span style={{ flex: 1, color: "var(--muted)", fontSize: 13 }}>
-                        {sev.label}
-                      </span>
-                      <span style={{ fontWeight: 700, fontSize: 13 }}>{n}</span>
-                    </div>
-                  );
-                })}
-              </div>
-
-              <a className="btn btn-ghost" href="/ayuda" style={{ marginTop: 14 }}>
-                💚 Ver ayuda y recursos
-              </a>
-            </div>
-          </div>
-        )}
       </section>
 
       <BuildingGrid reports={reports} onLocate={flyToReport} />
@@ -1202,56 +1127,6 @@ const seoStyles: Record<string, React.CSSProperties> = {
 };
 
 const styles: Record<string, React.CSSProperties> = {
-  overlay: {
-    position: "absolute",
-    inset: 0,
-    background: "rgba(0,0,0,0.6)",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    padding: 20,
-    zIndex: 20,
-  },
-  modal: {
-    position: "relative",
-    width: "100%",
-    maxWidth: 340,
-    background: "var(--panel)",
-    borderRadius: 16,
-    padding: 22,
-    maxHeight: "80vh",
-    overflowY: "auto",
-  },
-  modalClose: {
-    position: "absolute",
-    top: 12,
-    right: 14,
-    background: "transparent",
-    border: "none",
-    color: "var(--muted)",
-    fontSize: 18,
-  },
-  statRow: {
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-    padding: "8px 0",
-    borderBottom: "1px solid rgba(148,163,184,0.12)",
-    fontSize: 15,
-  },
-  breakdown: { marginTop: 14 },
-  breakRow: {
-    display: "flex",
-    alignItems: "center",
-    gap: 8,
-    padding: "5px 0",
-  },
-  dot: {
-    width: 12,
-    height: 12,
-    borderRadius: 999,
-    display: "inline-block",
-  },
   bottomBar: {
     position: "absolute",
     // Sit above MapLibre's attribution strip (~22px) plus the iOS home-bar
