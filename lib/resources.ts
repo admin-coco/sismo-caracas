@@ -61,7 +61,7 @@ export const EXTERNAL_RESOURCES: Resource[] = [
     badgeColor: "#0ea5e9",
     name: "Tilín",
     description: "Envía y recibe dinero de forma rápida.",
-    url: "https://tilin.com",
+    url: "https://tilinapp.com",
     logo: "/logos/tilin.svg",
   },
   {
