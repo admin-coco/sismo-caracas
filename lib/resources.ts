@@ -10,6 +10,7 @@ export interface Resource {
   logo?: string; // path under /public, shown top-left of the card
   logoHeight?: number; // override default logo height (px) for tighter-cropped logos
   logoStyle?: CSSProperties; // extra overrides (e.g. negative margins to crop padding)
+  benefits?: string[]; // compact one-line bullets shown under the description
 }
 
 // Coco services + Ridery — our own response options, shown first.
@@ -22,6 +23,11 @@ export const COCO_RESOURCES: Resource[] = [
     url: "https://cocomercado.com",
     logo: "/logos/coco-mercado.png",
     logoHeight: 44,
+    benefits: [
+      "🎟️ Tickets de donación en tiendas",
+      "🤝 Fundación Santa: comida y medicinas",
+      "🏷️ Cupón CONTIGO5: $5 de descuento",
+    ],
   },
   {
     badge: "Enviar dinero",
@@ -30,6 +36,10 @@ export const COCO_RESOURCES: Resource[] = [
     description: "Envía dinero de forma rápida a quienes lo necesitan.",
     url: "https://cocowallet.app",
     logo: "/logos/coco-wallet.png",
+    benefits: [
+      "🇻🇪 Envía a la ONG “AYUDA VENEZUELA”",
+      "💳 $3 gratis por tu primer depósito",
+    ],
   },
 ];
 

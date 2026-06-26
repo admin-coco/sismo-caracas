@@ -34,6 +34,15 @@ function Card({ r }: { r: Resource }) {
       )}
       <div style={styles.name}>{r.name}</div>
       <div style={styles.desc}>{r.description}</div>
+      {r.benefits && (
+        <ul style={styles.benefits}>
+          {r.benefits.map((b) => (
+            <li key={b} style={styles.benefit}>
+              {b}
+            </li>
+          ))}
+        </ul>
+      )}
       <div style={styles.bottomRow}>
         <span style={styles.visit}>Visitar sitio →</span>
         <span style={{ ...styles.badge, background: r.badgeColor }}>{r.badge}</span>
@@ -142,5 +151,18 @@ const styles: Record<string, React.CSSProperties> = {
   },
   name: { fontSize: 20, fontWeight: 800, margin: "0 0 6px" },
   desc: { color: "var(--muted)", fontSize: 15, lineHeight: 1.4 },
+  benefits: {
+    listStyle: "none",
+    margin: "8px 0 0",
+    padding: 0,
+  },
+  benefit: {
+    fontSize: 12.5,
+    lineHeight: 1.35,
+    color: "var(--text)",
+    whiteSpace: "nowrap",
+    overflow: "hidden",
+    textOverflow: "ellipsis",
+  },
   visit: { color: "#60a5fa", fontWeight: 700 },
 };
