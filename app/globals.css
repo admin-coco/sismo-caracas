@@ -73,6 +73,9 @@ a {
   background: #25d366;
   color: #04341c;
 }
+.btn-whatsapp:disabled {
+  opacity: 0.5;
+}
 
 .btn-ghost {
   background: var(--panel);

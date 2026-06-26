@@ -7,7 +7,6 @@ import { supabase, PHOTOS_BUCKET, type Severity } from "@/lib/supabase";
 import { SEVERITIES } from "@/lib/severity";
 import { CARACAS, shareApp } from "@/lib/share";
 import { searchAddress, type GeoResult } from "@/lib/geocode";
-import { subscribeToPush, pushSupported } from "@/lib/push";
 import { addPerson } from "@/lib/persons";
 import { TopNav } from "@/components/TopNav";
 
@@ -36,8 +35,9 @@ export default function ReportPage() {
   const [helpOpen, setHelpOpen] = useState(false); // "Hecho con amor" help modal
   const [copied, setCopied] = useState(false); // "link copied" toast
   const [mapError, setMapError] = useState(false); // WebGL/mini-map unavailable
-  const [notify, setNotify] = useState(false); // opt-in to push on new reports
   const [error, setError] = useState<string | null>(null);
+  // Two-step edificio flow: 1 = location, 2 = damage + photo + note.
+  const [step, setStep] = useState<1 | 2>(1);
 
   // Report type: building damage vs missing person. (Centro de ayuda routes
   // to /acopio.) Optional ?building=<id> links a person to a building.
@@ -270,7 +270,6 @@ export default function ReportPage() {
           photo_url,
           report_id: reportId,
         });
-        if (notify) subscribeToPush().catch(() => {});
         setDone(true);
       } catch (e) {
         console.error(e);
@@ -302,9 +301,6 @@ export default function ReportPage() {
         photo_url,
       });
       if (insErr) throw insErr;
-      if (notify) {
-        subscribeToPush().catch(() => {});
-      }
       setDone(true);
     } catch (e) {
       console.error(e);
@@ -349,6 +345,7 @@ export default function ReportPage() {
               setNote("");
               setFile(null);
               setPlace("");
+              setStep(1);
             }}
           >
             Reportar otro edificio
@@ -419,8 +416,15 @@ export default function ReportPage() {
       )}
 
       <div style={styles.grid}>
-        {/* Left column: location */}
-        <div>
+        {/* Step 1 (edificio): location. Kept mounted in step 2 via display:none
+            so the MapLibre instance never tears down. Persona mode is single-step. */}
+        <div
+          style={
+            reportType === "edificio" && step !== 1
+              ? { display: "none" }
+              : undefined
+          }
+        >
           <label style={styles.label}>1. Ubicación</label>
           <input
             type="text"
@@ -484,10 +488,28 @@ export default function ReportPage() {
               ? "Busca la dirección o usa tu ubicación."
               : "Arrastra el pin o toca «Expandir» para ajustar mejor."}
           </p>
+
+          {/* Step 1 → step 2 */}
+          {reportType === "edificio" && step === 1 && (
+            <button
+              className="btn btn-whatsapp"
+              onClick={() => setStep(2)}
+              style={{ marginTop: 12, padding: 13 }}
+            >
+              Continuar →
+            </button>
+          )}
         </div>
 
-        {/* Right column: type-specific fields */}
-        <div>
+        {/* Right column: type-specific fields. In the edificio flow this is
+            step 2; persona mode shows it alongside location (single step). */}
+        <div
+          style={
+            reportType === "edificio" && step !== 2
+              ? { display: "none" }
+              : undefined
+          }
+        >
           {reportType === "edificio" ? (
             <>
               <label style={styles.label}>2. Nivel de daño</label>
@@ -623,35 +645,37 @@ export default function ReportPage() {
 
       {error && <p style={{ ...styles.hint, color: "#b91c1c" }}>{error}</p>}
 
-      {pushSupported() && (
-        <label style={styles.checkRow}>
-          <input
-            type="checkbox"
-            checked={notify}
-            onChange={(e) => setNotify(e.target.checked)}
-            style={{ width: 18, height: 18 }}
-          />
-          🔔 Avísame cuando se reporten nuevos edificios
-        </label>
+      {/* Submit only in step 2 of the edificio flow; persona is single-step. */}
+      {(reportType === "persona" || step === 2) && (
+        <>
+          <button
+            className="btn btn-whatsapp"
+            disabled={
+              submitting ||
+              (reportType === "edificio"
+                ? severity == null || !file
+                : !firstName.trim() || !lastName.trim())
+            }
+            onClick={submit}
+            style={{ marginTop: 8, padding: 13 }}
+          >
+            {submitting
+              ? "Enviando…"
+              : reportType === "persona"
+              ? "Reportar persona desaparecida"
+              : "Enviar reporte"}
+          </button>
+          {reportType === "edificio" && (
+            <button
+              className="btn btn-ghost"
+              onClick={() => setStep(1)}
+              style={{ marginTop: 8, padding: 11, fontSize: 15 }}
+            >
+              ‹ Volver a la ubicación
+            </button>
+          )}
+        </>
       )}
-
-      <button
-        className="btn btn-primary"
-        disabled={
-          submitting ||
-          (reportType === "edificio"
-            ? severity == null || !file
-            : !firstName.trim() || !lastName.trim())
-        }
-        onClick={submit}
-        style={{ marginTop: 8, padding: 13 }}
-      >
-        {submitting
-          ? "Enviando…"
-          : reportType === "persona"
-          ? "Reportar persona desaparecida"
-          : "Enviar reporte"}
-      </button>
 
       <button
         onClick={() => setHelpOpen(true)}
@@ -766,15 +790,6 @@ const styles: Record<string, React.CSSProperties> = {
     background: "var(--rojo)",
     color: "#fff",
     borderColor: "var(--rojo)",
-  },
-  checkRow: {
-    display: "flex",
-    alignItems: "center",
-    gap: 10,
-    margin: "12px 0 0",
-    fontWeight: 600,
-    fontSize: 14,
-    cursor: "pointer",
   },
   label: { display: "block", fontWeight: 700, margin: "10px 0 5px" },
   hint: { color: "var(--muted)", fontSize: 12, margin: "5px 0 0" },
