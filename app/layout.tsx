@@ -49,7 +49,7 @@ export const metadata: Metadata = {
     description: DESCRIPTION,
     images: [
       {
-        url: "/og.jpg?v=2",
+        url: "/og.jpg?v=3",
         width: 1200,
         height: 630,
         alt: "Mapa de daños del terremoto en Venezuela",
@@ -60,7 +60,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: TITLE,
     description: DESCRIPTION,
-    images: ["/og.jpg?v=2"],
+    images: ["/og.jpg?v=3"],
   },
 };
 
@@ -85,7 +85,7 @@ const jsonLd = {
       "@type": "Organization",
       name: "SismoVenezuela",
       url: siteUrl,
-      logo: `${siteUrl}/og.jpg?v=2`,
+      logo: `${siteUrl}/og.jpg?v=3`,
     },
     {
       "@type": "WebApplication",
