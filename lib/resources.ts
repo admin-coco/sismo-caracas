@@ -62,8 +62,8 @@ export const EXTERNAL_RESOURCES: Resource[] = [
     badgeColor: "#0ea5e9",
     name: "Tilín",
     description:
-      "Inspecciones de ingenieros virtuales gratuitas para hogares afectados por el terremoto.",
-    url: "https://tilinapp.com",
+      "Inspecciones virtuales gratuitas para hogares afectados por el terremoto.",
+    url: "https://tilinapp.com/inspeccion-emergencia",
     logo: "/logos/tilin.svg",
   },
   {
