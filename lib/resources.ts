@@ -44,7 +44,8 @@ export const EXTERNAL_RESOURCES: Resource[] = [
     badge: "Transporte",
     badgeColor: "#16a34a",
     name: "Yummy Rides",
-    description: "Pide un viaje para movilizarte o ayudar a evacuar.",
+    description:
+      "Ayuda directamente a familias afectadas enviando una donación.",
     url: "https://dona.yummyrides.com",
     logo: "/logos/yummy-rides.png",
   },
@@ -60,7 +61,8 @@ export const EXTERNAL_RESOURCES: Resource[] = [
     badge: "Pagos",
     badgeColor: "#0ea5e9",
     name: "Tilín",
-    description: "Envía y recibe dinero de forma rápida.",
+    description:
+      "Inspecciones de ingenieros virtuales gratuitas para hogares afectados por el terremoto.",
     url: "https://tilinapp.com",
     logo: "/logos/tilin.svg",
   },
