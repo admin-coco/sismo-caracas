@@ -38,6 +38,10 @@ export default function ReportPage() {
   const [error, setError] = useState<string | null>(null);
   // Two-step edificio flow: 1 = location, 2 = damage + photo + note.
   const [step, setStep] = useState<1 | 2>(1);
+  // True once the user actively sets a location (pick a search result, use
+  // geolocation, or drag/tap the pin) — gates the "Continuar" button so they
+  // can't advance on the untouched default Caracas center.
+  const [locationSet, setLocationSet] = useState(false);
 
   // Report type: building damage vs missing person. (Centro de ayuda routes
   // to /acopio.) Optional ?building=<id> links a person to a building.
@@ -89,6 +93,7 @@ export default function ReportPage() {
     marker.on("dragend", () => {
       const ll = marker.getLngLat();
       setCoords({ lat: ll.lat, lng: ll.lng });
+      setLocationSet(true);
     });
     mapRef.current = map;
     markerRef.current = marker;
@@ -123,12 +128,14 @@ export default function ReportPage() {
     marker.on("dragend", () => {
       const ll = marker.getLngLat();
       setCoords({ lat: ll.lat, lng: ll.lng });
+      setLocationSet(true);
       markerRef.current?.setLngLat(ll); // keep the small map in sync
     });
     // Also let tapping the map move the pin (easier on a big map).
     map.on("click", (e) => {
       marker.setLngLat(e.lngLat);
       setCoords({ lat: e.lngLat.lat, lng: e.lngLat.lng });
+      setLocationSet(true);
       markerRef.current?.setLngLat(e.lngLat);
     });
     bigMapRef.current = map;
@@ -142,6 +149,7 @@ export default function ReportPage() {
   // Shared by geolocation and address pick: move pin + recenter map + record coords.
   function moveTo(lat: number, lng: number, zoom = 16) {
     setCoords({ lat, lng });
+    setLocationSet(true);
     const map = mapRef.current;
     const marker = markerRef.current;
     if (map && marker) {
@@ -346,6 +354,7 @@ export default function ReportPage() {
               setFile(null);
               setPlace("");
               setStep(1);
+              setLocationSet(false);
             }}
           >
             Reportar otro edificio
@@ -489,15 +498,24 @@ export default function ReportPage() {
               : "Arrastra el pin o toca «Expandir» para ajustar mejor."}
           </p>
 
-          {/* Step 1 → step 2 */}
+          {/* Step 1 → step 2. Disabled until a name and a location are set. */}
           {reportType === "edificio" && step === 1 && (
-            <button
-              className="btn btn-whatsapp"
-              onClick={() => setStep(2)}
-              style={{ marginTop: 12, padding: 13 }}
-            >
-              Continuar →
-            </button>
+            <>
+              <button
+                className="btn btn-whatsapp"
+                disabled={!place.trim() || !locationSet}
+                onClick={() => setStep(2)}
+                style={{ marginTop: 12, padding: 13 }}
+              >
+                Continuar →
+              </button>
+              {(!place.trim() || !locationSet) && (
+                <p style={styles.hint}>
+                  Escribe el nombre del edificio y marca la ubicación para
+                  continuar.
+                </p>
+              )}
+            </>
           )}
         </div>
 
