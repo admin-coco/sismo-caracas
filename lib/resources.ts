@@ -136,4 +136,15 @@ export const EXTERNAL_RESOURCES: Resource[] = [
     logo: "/logos/meru.png",
     logoHeight: 44, // square 1081×1081 — bump like Coco Mercado so it doesn't read tiny
   },
+  {
+    badge: "Enviar dinero",
+    badgeColor: "#0ea5e9",
+    name: "Binance",
+    description:
+      "Recibe tu parte de $3MM donados por Binance Foundation en cupones de $20 USDT. Envíos sin comisiones en transacciones P2P y Binance Pay hasta el 3 de Julio.",
+    // Percent-encoded path segment so non-ASCII "fundación" round-trips
+    // through CDNs/referrers without relying on browser auto-encoding.
+    url: "https://www.binance.com/es-LA/blog/fundaci%C3%B3n/494861573422684842",
+    logo: "/logos/binance.png",
+  },
 ];
