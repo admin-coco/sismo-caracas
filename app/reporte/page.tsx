@@ -427,39 +427,41 @@ export default function ReportPage() {
             placeholder="Nombre del edificio / casa (ej: Res. El Ávila)"
             style={styles.input}
           />
-          <div style={styles.searchWrap}>
-            <input
-              type="text"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="🔎 Buscar dirección…"
-              style={styles.input}
-              autoComplete="off"
-            />
-            {(results.length > 0 || searching) && (
-              <ul style={styles.results}>
-                {searching && results.length === 0 && (
-                  <li style={styles.resultEmpty}>Buscando…</li>
-                )}
-                {results.map((r, i) => (
-                  <li
-                    key={`${r.lat},${r.lng},${i}`}
-                    style={styles.resultItem}
-                    onClick={() => pickResult(r)}
-                  >
-                    📍 {r.label}
-                  </li>
-                ))}
-              </ul>
-            )}
+          <div style={styles.searchRow}>
+            <div style={{ ...styles.searchWrap, flex: 1 }}>
+              <input
+                type="text"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="🔎 Buscar dirección…"
+                style={{ ...styles.input, marginBottom: 0 }}
+                autoComplete="off"
+              />
+              {(results.length > 0 || searching) && (
+                <ul style={styles.results}>
+                  {searching && results.length === 0 && (
+                    <li style={styles.resultEmpty}>Buscando…</li>
+                  )}
+                  {results.map((r, i) => (
+                    <li
+                      key={`${r.lat},${r.lng},${i}`}
+                      style={styles.resultItem}
+                      onClick={() => pickResult(r)}
+                    >
+                      📍 {r.label}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+            <button
+              className="btn btn-ghost"
+              onClick={useMyLocation}
+              style={styles.locBtn}
+            >
+              {geo === "locating" ? "📍…" : "📍 Mi ubicación"}
+            </button>
           </div>
-          <button
-            className="btn btn-ghost"
-            onClick={useMyLocation}
-            style={{ padding: 11, fontSize: 15 }}
-          >
-            {geo === "locating" ? "Localizando…" : "📍 Usar mi ubicación"}
-          </button>
           <div style={{ position: "relative" }}>
             <div
               ref={containerRef}
@@ -782,7 +784,16 @@ const styles: Record<string, React.CSSProperties> = {
     fontSize: 15,
     colorScheme: "light", // native <select> dropdown matches the light theme
   },
+  searchRow: { display: "flex", gap: 8, alignItems: "stretch", marginBottom: 8 },
   searchWrap: { position: "relative" },
+  locBtn: {
+    flexShrink: 0,
+    width: "auto",
+    padding: "0 14px",
+    fontSize: 14,
+    fontWeight: 700,
+    whiteSpace: "nowrap",
+  },
   results: {
     listStyle: "none",
     margin: "-6px 0 0",
