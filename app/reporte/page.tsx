@@ -34,7 +34,6 @@ export default function ReportPage() {
   const [reportId, setReportId] = useState<string | null>(null); // for reward claim
   // Honeypot: humans never see/fill this; bots auto-fill it. If set, we bail.
   const [hp, setHp] = useState("");
-  const [helpOpen, setHelpOpen] = useState(false); // "Hecho con amor" help modal
   const [copied, setCopied] = useState(false); // "link copied" toast
   const [mapError, setMapError] = useState(false); // WebGL/mini-map unavailable
   const [error, setError] = useState<string | null>(null);
@@ -96,6 +95,15 @@ export default function ReportPage() {
       const ll = marker.getLngLat();
       setCoords({ lat: ll.lat, lng: ll.lng });
       setLocationSet(true);
+    });
+    // Collapse the compact attribution to just the ⓘ icon (it loads expanded
+    // as a wide chip). Tapping the icon still reveals full attribution.
+    map.on("load", () => {
+      const attrib = containerRef.current?.querySelector(
+        ".maplibregl-ctrl-attrib.maplibregl-compact-show"
+      );
+      attrib?.classList.remove("maplibregl-compact-show");
+      if (attrib instanceof HTMLDetailsElement) attrib.open = false;
     });
     mapRef.current = map;
     markerRef.current = marker;
@@ -398,7 +406,7 @@ export default function ReportPage() {
           <p style={styles.sub}>Terremoto Venezuela · mapa colaborativo</p>
         </div>
         <a href="/mis-reportes" style={styles.verMapa}>
-          💵 Mis reportes
+          Mis reportes
         </a>
       </header>
 
@@ -487,18 +495,27 @@ export default function ReportPage() {
           {/* Step 1 → step 2. Disabled until a name and a location are set. */}
           {reportType === "edificio" && step === 1 && (
             <>
+              <label style={styles.label}>2. Foto (obligatoria)</label>
+              <input
+                type="file"
+                accept="image/*"
+                onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+                style={styles.file}
+              />
+              {file && <p style={styles.hint}>✓ {file.name}</p>}
+
               <button
                 className="btn btn-whatsapp"
-                disabled={!place.trim() || !locationSet}
+                disabled={!place.trim() || !locationSet || !file}
                 onClick={() => setStep(2)}
                 style={{ marginTop: 12, padding: 13 }}
               >
                 Continuar →
               </button>
-              {(!place.trim() || !locationSet) && (
+              {(!place.trim() || !locationSet || !file) && (
                 <p style={styles.hint}>
-                  Escribe el nombre del edificio y marca la ubicación para
-                  continuar.
+                  Escribe el nombre del edificio, marca la ubicación y agrega
+                  una foto para continuar.
                 </p>
               )}
             </>
@@ -516,7 +533,7 @@ export default function ReportPage() {
         >
           {reportType === "edificio" ? (
             <>
-              <label style={styles.label}>2. Nivel de daño</label>
+              <label style={styles.label}>3. Nivel de daño</label>
               <select
                 value={severity ?? ""}
                 onChange={(e) =>
@@ -536,15 +553,6 @@ export default function ReportPage() {
                   </option>
                 ))}
               </select>
-
-              <label style={styles.label}>3. Foto (obligatoria)</label>
-              <input
-                type="file"
-                accept="image/*"
-                onChange={(e) => setFile(e.target.files?.[0] ?? null)}
-                style={styles.file}
-              />
-              {file && <p style={styles.hint}>✓ {file.name}</p>}
             </>
           ) : (
             <>
@@ -681,12 +689,6 @@ export default function ReportPage() {
         </>
       )}
 
-      <button
-        onClick={() => setHelpOpen(true)}
-        style={{ ...styles.madeWith, margin: "10px 0 8px" }}
-      >
-        Hecho con amor 💚🇻🇪 por Coco Wallet
-      </button>
 
       {mapBig && (
         <div style={styles.mapModalOverlay}>
@@ -703,42 +705,6 @@ export default function ReportPage() {
         </div>
       )}
 
-      {helpOpen && (
-        <div style={styles.overlay} onClick={() => setHelpOpen(false)}>
-          <div style={styles.modal} onClick={(e) => e.stopPropagation()}>
-            <button
-              onClick={() => setHelpOpen(false)}
-              style={styles.modalClose}
-              aria-label="Cerrar"
-            >
-              ✕
-            </button>
-            <h2 style={{ margin: "0 0 4px", fontSize: 20 }}>
-              Ayuda a los afectados 💚
-            </h2>
-            <p style={{ color: "var(--muted)", fontSize: 14, margin: "0 0 16px" }}>
-              ¿Cómo quieres ayudar?
-            </p>
-            <a
-              className="btn btn-primary"
-              href="https://cocomercado.com"
-              target="_blank"
-              rel="noopener noreferrer"
-              style={{ marginBottom: 10 }}
-            >
-              🍲 Enviar comida
-            </a>
-            <a
-              className="btn btn-whatsapp"
-              href="https://cocowallet.app"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              💸 Enviar dinero
-            </a>
-          </div>
-        </div>
-      )}
     </main>
   );
 }
@@ -904,45 +870,5 @@ const styles: Record<string, React.CSSProperties> = {
     width: "100%",
     maxWidth: 320,
     marginTop: 24,
-  },
-  madeWith: {
-    display: "block",
-    width: "100%",
-    margin: "20px 0 28px",
-    padding: 8,
-    background: "transparent",
-    border: "none",
-    color: "var(--muted)",
-    fontSize: 14,
-    textAlign: "center",
-  },
-  overlay: {
-    position: "fixed",
-    inset: 0,
-    background: "rgba(0,0,0,0.6)",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    padding: 20,
-    zIndex: 50,
-  },
-  modal: {
-    position: "relative",
-    width: "100%",
-    maxWidth: 340,
-    background: "var(--panel)",
-    borderRadius: 16,
-    padding: 24,
-    display: "flex",
-    flexDirection: "column",
-  },
-  modalClose: {
-    position: "absolute",
-    top: 12,
-    right: 14,
-    background: "transparent",
-    border: "none",
-    color: "var(--muted)",
-    fontSize: 18,
   },
 };

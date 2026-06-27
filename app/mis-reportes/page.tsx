@@ -46,7 +46,7 @@ export default function MisReportesPage() {
     return (
       <main style={styles.page}>
         <TopNav showMapaLink />
-        <h1 style={styles.title}>💵 Mis reportes</h1>
+        <h1 style={styles.title}>Mis reportes</h1>
         <p style={styles.sub}>
           Ganas $1 por cada reporte aprobado. Inicia sesión con tu correo para
           ver tus reportes y tu recompensa.
